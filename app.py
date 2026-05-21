@@ -12,7 +12,11 @@ senha_pura = "Agrinho@2000"
 senha_codificada = urllib.parse.quote_plus(senha_pura)
 MONGO_URI = f"mongodb+srv://{usuario}:{senha_codificada}@agrinho.n5jnpdu.mongodb.net/"
 
-client = MongoClient(MONGO_URI)
+@st.cache_resource
+def iniciar_conexao():
+    return MongoClient(MONGO_URI)
+
+client = iniciar_conexao()
 db = client["AgroData"]
 usuarios_coll = db["usuarios"]
 historico_coll = db["historico_sensores"]
@@ -79,10 +83,11 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- CONTROLE DE ACESSO ---
+# --- INICIALIZAÇÃO DO ESTADO temporário ---
 if 'autenticado' not in st.session_state: st.session_state.autenticado = False
 if 'usuario_logado' not in st.session_state: st.session_state.usuario_logado = None
 if 'eh_admin' not in st.session_state: st.session_state.eh_admin = False
+if 'diagnostico_ia' not in st.session_state: st.session_state.diagnostico_ia = ""
 
 # --- TELA DE LOGIN ---
 if not st.session_state.autenticado:
@@ -107,7 +112,8 @@ if not st.session_state.autenticado:
                     st.session_state.usuario_logado = user_limpo
                     st.session_state.eh_admin = usuario_no_banco.get("tipo") == "admin"
                     st.rerun()
-                else: st.error("Dados incorretos.")
+                else: 
+                    st.error("Dados incorretos.")
                     
     with aba_cadastro:
         with st.form("form_cadastro"):
@@ -119,17 +125,22 @@ if not st.session_state.autenticado:
                 novo_user_limpo = novo_user.strip().lower()
                 nova_senha_limpa = nova_senha.strip()
                 if novo_user_limpo and nova_senha_limpa:
-                    if usuarios_coll.find_one({"usuario": novo_user_limpo}): st.warning("Usuário indisponível.")
+                    if usuarios_coll.find_one({"usuario": novo_user_limpo}): 
+                        st.warning("Usuário indisponível.")
                     else:
                         usuarios_coll.insert_one({"usuario": novo_user_limpo, "senha": nova_senha_limpa, "tipo": "comum"})
-                        st.success("Cadastrado! Faça o login.")
-                else: st.error("Preencha tudo.")
+                        st.success("Cadastrado com sucesso! Mude para a aba 'ENTRAR'.")
+                else: 
+                    st.error("Preencha todos os campos.")
     st.stop()
 
 # --- CARREGAMENTO DE DADOS ---
-dados_do_banco = list(historico_coll.find({})) if st.session_state.eh_admin else list(historico_coll.find({"usuario": st.session_state.usuario_logado}))
-st.session_state.historico = dados_do_banco
-df_filtrado = pd.DataFrame(st.session_state.historico)
+if st.session_state.eh_admin:
+    dados_do_banco = list(historico_coll.find({}))
+else:
+    dados_do_banco = list(historico_coll.find({"usuario": st.session_state.usuario_logado}))
+
+df_filtrado = pd.DataFrame(dados_do_banco)
 
 # --- MINI BARRA DE TOPO APP ---
 top_c1, top_c2 = st.columns([3, 1])
@@ -141,6 +152,7 @@ with top_c2:
         st.session_state.autenticado = False
         st.session_state.usuario_logado = None
         st.session_state.eh_admin = False
+        st.session_state.diagnostico_ia = ""
         st.rerun()
 
 st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
@@ -153,7 +165,7 @@ else:
 
 abas = st.tabs(abas_sistema)
 
-# --- ABA 1: DASHBOARD (Com Gráfico e Mapa Restaurado) ---
+# --- ABA 1: DASHBOARD ---
 with abas[0]:
     if st.session_state.eh_admin and not df_filtrado.empty:
         usuarios_disponiveis = ["Todos os Produtores"] + list(df_filtrado["usuario"].unique())
@@ -177,7 +189,7 @@ with abas[0]:
         with c_p4:
             st.markdown(f"""<div class='mobile-card'><div style='text-align:left;'><div class='mobile-card-title'>📈 Envios</div><div class='mobile-card-value'>{len(df_filtrado)}</div></div><div style='font-size:1.8rem;'>📊</div></div>""", unsafe_allow_html=True)
 
-        # Seção Visual: Gráfico e Mapa dispostos em colunas no PC e empilhados no celular
+        # Seção Visual
         col_visual_esq, col_visual_dir = st.columns([1.2, 1])
         
         with col_visual_esq:
@@ -193,20 +205,22 @@ with abas[0]:
             
         with col_visual_dir:
             st.markdown("<h3>📍 Localização dos Sensores</h3>", unsafe_allow_html=True)
-            # Mapa reintroduzido e configurado com tamanho ideal para ambas as telas
             st.map(df_filtrado, height=220)
             
-        # IA Agrônomo com Caixa de Mensagem Direta
+        # IA Agrônomo com persistência no session_state
         st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
         if st.button("🤖 GERAR DIAGNÓSTICO IA DA LAVOURA"):
             with st.spinner("Analisando solo..."):
                 try:
                     prompt = f"Você é um agrônomo. Resuma de forma muito direta (máximo 3 tópicos curtos de celular) o estado desse solo: {df_filtrado.tail(3).to_string()}"
-                    resposta = model.generate_content(prompt).text
-                    st.markdown("<div style='background-color:#161b22; padding:15px; border-radius:10px; border-left:4px solid #2ea043;'>", unsafe_allow_html=True)
-                    st.write(resposta)
-                    st.markdown("</div>", unsafe_allow_html=True)
-                except: st.info("Erro ao conectar IA.")
+                    st.session_state.diagnostico_ia = model.generate_content(prompt).text
+                except: 
+                    st.session_state.diagnostico_ia = "Erro ao conectar com a IA do Google. Verifique sua chave de API."
+        
+        if st.session_state.diagnostico_ia:
+            st.markdown("<div style='background-color:#161b22; padding:15px; border-radius:10px; border-left:4px solid #2ea043;'>", unsafe_allow_html=True)
+            st.write(st.session_state.diagnostico_ia)
+            st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.info("Nenhum dado cadastrado para exibição.")
 
@@ -225,7 +239,9 @@ if not st.session_state.eh_admin:
             f_lon = c2.number_input("Lon", value=-46.6576, format="%.4f")
             
             st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-            if st.form_submit_button("🚀 ENVIAR LEITURA AGORA"):
+            enviado = st.form_submit_button("🚀 ENVIAR LEITURA AGORA")
+            
+            if enviado:
                 nova_leitura = {
                     "usuario": st.session_state.usuario_logado,
                     "Sensor": f_sensor, "pH": float(f_ph), "Umidade": int(f_umidade),
@@ -233,15 +249,15 @@ if not st.session_state.eh_admin:
                     "Hora": pd.Timestamp.now().strftime("%H:%M:%S")
                 }
                 historico_coll.insert_one(nova_leitura)
-                st.toast("Salvo com Sucesso!", icon="✅")
-                st.rerun()
+                st.success("Dados enviados com sucesso! Confira na aba de registros.")
 
     with abas[2]:
         st.markdown("<h2>📋 Seus Dados Enviados</h2>", unsafe_allow_html=True)
         if not df_filtrado.empty:
             df_tab = df_filtrado.copy().drop(columns=['_id', 'usuario'], errors='ignore')
             st.dataframe(df_tab, use_container_width=True, hide_index=True)
-        else: st.warning("Sem dados cadastrados.")
+        else: 
+            st.warning("Sem dados cadastrados.")
 
 # --- COMPORTAMENTO DO ADMIN ---
 else:
@@ -263,7 +279,7 @@ else:
                         {"_id": ObjectId(row['_id'])},
                         {"$set": {"Sensor": row['Sensor'], "pH": float(row['pH']), "Umidade": int(row['Umidade'])}}
                     )
-                st.success("Banco Atualizado!")
+                st.success("Banco Atualizado com Sucesso!")
                 st.rerun()
                 
             st.markdown("---")
@@ -271,9 +287,9 @@ else:
             opcoes_delecao = [f"[{i}] {row['usuario']} | {row['Sensor']}" for i, row in df_filtrado.iterrows()]
             escolha_registro = st.selectbox("Selecione a linha:", opcoes_delecao)
             
-            if st.button("🗑️ REMOVER PERMANENTEMENTE", type="secondary"):
+            if st.button("🗑️ REMOVER PERMANENTEMENTE"):
                 idx_original = int(escolha_registro.split(']')[0].replace('[', ''))
                 id_para_deletar = df_filtrado.iloc[idx_original]['_id']
                 historico_coll.delete_one({"_id": ObjectId(id_para_deletar)})
-                st.toast("Deletado!", icon="🗑️")
+                st.success("Registro removido!")
                 st.rerun()
