@@ -228,7 +228,9 @@ with abas[0]:
             
         # IA Agrônomo com persistência no session_state
         st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
-       if st.button("🤖 GERAR DIAGNÓSTICO IA DA LAVOURA"):
+       # IA Agrônomo com persistência no session_state
+        st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+        if st.button("🤖 GERAR DIAGNÓSTICO IA DA LAVOURA"):
             with st.spinner("Analisando solo..."):
                 try:
                     dados_usuario = usuarios_coll.find_one({"usuario": st.session_state.usuario_logado})
@@ -242,6 +244,8 @@ with abas[0]:
                     Adapte a sua linguagem e foco da resposta para o que esse perfil precisa (ex: se for agrônomo de múltiplas fazendas, foque em dados técnicos e visão macro; se for produtor, foque em ações práticas e rápidas).
                     """
                     st.session_state.diagnostico_ia = model.generate_content(prompt).text
+                except: 
+                    st.session_state.diagnostico_ia = "Erro ao conectar com a IA do Google. Verifique sua chave de API."
         
         if st.session_state.diagnostico_ia:
             st.markdown("<div style='background-color:#161b22; padding:15px; border-radius:10px; border-left:4px solid #2ea043;'>", unsafe_allow_html=True)
