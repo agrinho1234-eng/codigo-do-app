@@ -21,8 +21,12 @@ db = client["AgroData"]
 usuarios_coll = db["usuarios"]
 historico_coll = db["historico_sensores"]
 
-# --- CONFIGURAÇÃO DA IA ---
-GOOGLE_API_KEY = "AIzaSyAOSceFTPO5CCesJnnAL4ODncNBF1VjdS4" 
+# --- CONFIGURAÇÃO DA IA SEGURA ---
+if "GOOGLE_API_KEY" in st.secrets:
+    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+else:
+    GOOGLE_API_KEY = "AIzaSyAOSceFTPO5CCesJnnAL4ODncNBF1VjdS4" 
+
 genai.configure(api_key=GOOGLE_API_KEY)
 
 def buscar_modelo():
