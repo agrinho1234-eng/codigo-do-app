@@ -125,6 +125,15 @@ if not st.session_state.autenticado:
         with st.form("form_cadastro"):
             novo_user = st.text_input("Escolha o Usuário")
             nova_senha = st.text_input("Crie uma Senha", type="password")
+            perfil_personalizado = st.selectbox(
+                "Qual é o seu perfil na lavoura?", 
+                [
+                    "Produtor Geral (Foco em produtividade)", 
+                    "Agrônomo de Múltiplas Fazendas (Foco em relatórios técnicos)", 
+                    "Consultor Técnico (Foco em correção de solo)", 
+                    "Estudante/Pesquisador (Foco em análise detalhada)"
+                ]
+            )
             btn_cadastrar = st.form_submit_button("CADASTRAR")
             
             if btn_cadastrar:
@@ -134,11 +143,15 @@ if not st.session_state.autenticado:
                     if usuarios_coll.find_one({"usuario": novo_user_limpo}): 
                         st.warning("Usuário indisponível.")
                     else:
-                        usuarios_coll.insert_one({"usuario": novo_user_limpo, "senha": nova_senha_limpa, "tipo": "comum"})
+                        usuarios_coll.insert_one({
+                            "usuario": novo_user_limpo, 
+                            "senha": nova_senha_limpa, 
+                            "tipo": "comum",
+                            "perfil": perfil_personalizado
+                        })
                         st.success("Cadastrado com sucesso! Mude para a aba 'ENTRAR'.")
                 else: 
                     st.error("Preencha todos os campos.")
-    st.stop()
 
 # --- CARREGAMENTO DE DADOS ---
 if st.session_state.eh_admin:
@@ -215,13 +228,20 @@ with abas[0]:
             
         # IA Agrônomo com persistência no session_state
         st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
-        if st.button("🤖 GERAR DIAGNÓSTICO IA DA LAVOURA"):
+       if st.button("🤖 GERAR DIAGNÓSTICO IA DA LAVOURA"):
             with st.spinner("Analisando solo..."):
                 try:
-                    prompt = f"Você é um agrônomo. Resuma de forma muito direta (máximo 3 tópicos curtos de celular) o estado desse solo: {df_filtrado.tail(3).to_string()}"
+                    dados_usuario = usuarios_coll.find_one({"usuario": st.session_state.usuario_logado})
+                    perfil_usuario = dados_usuario.get("perfil", "Produtor Geral (Foco em produtividade)") if dados_usuario else "Produtor Geral"
+
+                    prompt = f"""
+                    Você é um agrônomo sênior especialista em IA. 
+                    Analise os seguintes dados de solo: {df_filtrado.tail(3).to_string()}
+                    
+                    Gere um diagnóstico curto (máximo 3 tópicos de celular) personalizado para o seguinte perfil de usuário: {perfil_usuario}.
+                    Adapte a sua linguagem e foco da resposta para o que esse perfil precisa (ex: se for agrônomo de múltiplas fazendas, foque em dados técnicos e visão macro; se for produtor, foque em ações práticas e rápidas).
+                    """
                     st.session_state.diagnostico_ia = model.generate_content(prompt).text
-                except: 
-                    st.session_state.diagnostico_ia = "Erro ao conectar com a IA do Google. Verifique sua chave de API."
         
         if st.session_state.diagnostico_ia:
             st.markdown("<div style='background-color:#161b22; padding:15px; border-radius:10px; border-left:4px solid #2ea043;'>", unsafe_allow_html=True)
