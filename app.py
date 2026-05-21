@@ -25,7 +25,13 @@ historico_coll = db["historico_sensores"]
 if "GOOGLE_API_KEY" in st.secrets:
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 else:
-    GOOGLE_API_KEY = "AIzaSyAOSceFTPO5CCesJnnAL4ODncNBF1VjdS4" 
+    GOOGLE_API_KEY = "# --- CONFIGURAÇÃO DA IA SEGURA ---
+if "GOOGLE_API_KEY" in st.secrets:
+    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+else:
+    GOOGLE_API_KEY = "AIzaSyDBItQq-Qu6atbjZL7Od1Buz6Fonmy_v6s" 
+
+genai.configure(api_key=GOOGLE_API_KEY)" 
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
