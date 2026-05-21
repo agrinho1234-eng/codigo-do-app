@@ -25,9 +25,7 @@ historico_coll = db["historico_sensores"]
 if "GOOGLE_API_KEY" in st.secrets:
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 else:
-    GOOGLE_API_KEY = "AIzaSyDBItQq-Qu6atbjZL7Od1Buz6Fonmy_v6s"
-
-genai.configure(api_key=GOOGLE_API_KEY)
+    GOOGLE_API_KEY = ""
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
@@ -89,7 +87,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- INICIALIZAÇÃO DO ESTADO temporário ---
+# --- INICIALIZAÇÃO DO ESTADO TEMPORÁRIO ---
 if 'autenticado' not in st.session_state: st.session_state.autenticado = False
 if 'usuario_logado' not in st.session_state: st.session_state.usuario_logado = None
 if 'eh_admin' not in st.session_state: st.session_state.eh_admin = False
@@ -120,7 +118,7 @@ if not st.session_state.autenticado:
                     st.rerun()
                 else: 
                     st.error("Dados incorretos.")
-                    
+                        
     with aba_cadastro:
         with st.form("form_cadastro"):
             novo_user = st.text_input("Escolha o Usuário")
@@ -152,6 +150,7 @@ if not st.session_state.autenticado:
                         st.success("Cadastrado com sucesso! Mude para a aba 'ENTRAR'.")
                 else: 
                     st.error("Preencha todos os campos.")
+    st.stop()
 
 # --- CARREGAMENTO DE DADOS ---
 if st.session_state.eh_admin:
@@ -227,8 +226,6 @@ with abas[0]:
             st.map(df_filtrado, height=220)
             
         # IA Agrônomo com persistência no session_state
-        st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
-       # IA Agrônomo com persistência no session_state
         st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
         if st.button("🤖 GERAR DIAGNÓSTICO IA DA LAVOURA"):
             with st.spinner("Analisando solo..."):
