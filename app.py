@@ -124,14 +124,16 @@ if not st.session_state.autenticado:
             novo_user = st.text_input("Escolha o Usuário")
             nova_senha = st.text_input("Crie uma Senha", type="password")
             
-            # --- SELEÇÃO DE PERFIL ESTRATÉGICO ---
+            # --- VARIETAL PERFIL ESTRATÉGICO ---
             perfil_personalizado = st.selectbox(
-                "Qual é o seu perfil e porte na lavoura?", 
+                "Qual é o seu perfil na lavoura?", 
                 [
                     "Pequeno Produtor (Agricultura Familiar e Orgânicos)", 
                     "Médio Produtor (Cultivos Comerciais e Grãos)", 
                     "Grande Produtor (Alta Tecnologia e Larga Escala)", 
-                    "Agrônomo / Consultor (Foco em Relatórios Técnicos)"
+                    "Agrônomo / Consultor (Foco em Relatórios Técnicos)",
+                    "Estudante / Pesquisador Acadêmico (Análise Científica)",
+                    "Entusiasta / Usuário de Testes (Apenas conhecendo o app)"
                 ]
             )
             btn_cadastrar = st.form_submit_button("CADASTRAR")
@@ -236,7 +238,7 @@ with abas[0]:
                     dados_usuario = usuarios_coll.find_one({"usuario": st.session_state.usuario_logado})
                     perfil_usuario = dados_usuario.get("perfil", "Pequeno Produtor (Agricultura Familiar e Orgânicos)") if dados_usuario else "Pequeno Produtor"
 
-                    # Prompt com estratégia de inteligência por porte/perfil
+                    # Prompt com estratégia de inteligência expandida
                     prompt = f"""
                     Você é um agrônomo sênior especialista em IA e inteligência de dados de solo.
                     Analise os seguintes dados recentes de solo: {df_filtrado.tail(3).to_string()}
@@ -244,10 +246,12 @@ with abas[0]:
                     Gere um diagnóstico personalizado de no máximo 3 tópicos curtos para o perfil: "{perfil_usuario}".
                     
                     Siga estritamente esta estratégia de resposta para o perfil selecionado:
-                    - Se for Pequeno Produtor: Foque em soluções práticas, manejos manuais ou orgânicos e defensivos/adubos de baixo custo. Use linguagem simples.
+                    - Se for Pequeno Produtor: Foque em soluções práticas, manejos manuais ou orgânicos e adubos de baixo custo. Use linguagem simples.
                     - Se for Médio Produtor: Foque em eficiência, custo-benefício de fertilizantes e táticas para aumentar a produtividade por hectare.
-                    - Se for Grande Produtor: Foque em alta tecnologia, correção de solo para maquinário pesado, agricultura de precisão e metas de larga escala. Use termos profissionais.
-                    - Se for Agrônomo / Consultor: Não dê dicas óbvias. Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
+                    - Se for Grande Produtor: Foque em alta tecnologia, correção de solo para maquinário pesado, agricultura de precisão e metas de larga escala.
+                    - Se for Agrônomo / Consultor: Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
+                    - Se for Estudante / Pesquisador Acadêmico: Foque na explicação teórica e científica por trás dos dados (ex: dinâmica da água no solo, disponibilidade de nutrientes conforme o pH). Use termos acadêmicos e científicos.
+                    - Se for Entusiasta / Usuário de Testes: Faça um resumo super divertido, interativo e explicativo sobre como o app lê esses dados de solo, incentivando o usuário.
                     """
                     st.session_state.diagnostico_ia = model.generate_content(prompt).text
                 except: 
