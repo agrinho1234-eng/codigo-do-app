@@ -123,13 +123,15 @@ if not st.session_state.autenticado:
         with st.form("form_cadastro"):
             novo_user = st.text_input("Escolha o Usuário")
             nova_senha = st.text_input("Crie uma Senha", type="password")
+            
+            # --- SELEÇÃO DE PERFIL ESTRATÉGICO ---
             perfil_personalizado = st.selectbox(
-                "Qual é o seu perfil na lavoura?", 
+                "Qual é o seu perfil e porte na lavoura?", 
                 [
-                    "Produtor Geral (Foco em produtividade)", 
-                    "Agrônomo de Múltiplas Fazendas (Foco em relatórios técnicos)", 
-                    "Consultor Técnico (Foco em correção de solo)", 
-                    "Estudante/Pesquisador (Foco em análise detalhada)"
+                    "Pequeno Produtor (Agricultura Familiar e Orgânicos)", 
+                    "Médio Produtor (Cultivos Comerciais e Grãos)", 
+                    "Grande Produtor (Alta Tecnologia e Larga Escala)", 
+                    "Agrônomo / Consultor (Foco em Relatórios Técnicos)"
                 ]
             )
             btn_cadastrar = st.form_submit_button("CADASTRAR")
@@ -230,15 +232,22 @@ with abas[0]:
         if st.button("🤖 GERAR DIAGNÓSTICO IA DA LAVOURA"):
             with st.spinner("Analisando solo..."):
                 try:
+                    # Busca o perfil personalizado que o usuário escolheu no cadastro
                     dados_usuario = usuarios_coll.find_one({"usuario": st.session_state.usuario_logado})
-                    perfil_usuario = dados_usuario.get("perfil", "Produtor Geral (Foco em produtividade)") if dados_usuario else "Produtor Geral"
+                    perfil_usuario = dados_usuario.get("perfil", "Pequeno Produtor (Agricultura Familiar e Orgânicos)") if dados_usuario else "Pequeno Produtor"
 
+                    # Prompt com estratégia de inteligência por porte/perfil
                     prompt = f"""
-                    Você é um agrônomo sênior especialista em IA. 
-                    Analise os seguintes dados de solo: {df_filtrado.tail(3).to_string()}
+                    Você é um agrônomo sênior especialista em IA e inteligência de dados de solo.
+                    Analise os seguintes dados recentes de solo: {df_filtrado.tail(3).to_string()}
                     
-                    Gere um diagnóstico curto (máximo 3 tópicos de celular) personalizado para o seguinte perfil de usuário: {perfil_usuario}.
-                    Adapte a sua linguagem e foco da resposta para o que esse perfil precisa (ex: se for agrônomo de múltiplas fazendas, foque em dados técnicos e visão macro; se for produtor, foque em ações práticas e rápidas).
+                    Gere um diagnóstico personalizado de no máximo 3 tópicos curtos para o perfil: "{perfil_usuario}".
+                    
+                    Siga estritamente esta estratégia de resposta para o perfil selecionado:
+                    - Se for Pequeno Produtor: Foque em soluções práticas, manejos manuais ou orgânicos e defensivos/adubos de baixo custo. Use linguagem simples.
+                    - Se for Médio Produtor: Foque em eficiência, custo-benefício de fertilizantes e táticas para aumentar a produtividade por hectare.
+                    - Se for Grande Produtor: Foque em alta tecnologia, correção de solo para maquinário pesado, agricultura de precisão e metas de larga escala. Use termos profissionais.
+                    - Se for Agrônomo / Consultor: Não dê dicas óbvias. Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
                     """
                     st.session_state.diagnostico_ia = model.generate_content(prompt).text
                 except: 
