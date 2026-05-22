@@ -33,7 +33,7 @@ try:
 except:
     GOOGLE_API_KEY = ""
 
-# --- FUNÇÃO DE REQUISIÇÃO DIRETA COM MOTOR ATUALIZADO ---
+# --- FUNÇÃO DE REQUISIÇÃO DIRETA ---
 def chamar_gemini_vias_puras(prompt_texto, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
     
@@ -112,23 +112,38 @@ st.markdown("""
     }
     input:focus, select:focus { border-color: #00E676 !important; }
     
-    /* Botões Magnéticos com Gradiente */
+    /* BOTÕES REESTILIZADOS: Visual Cyber Minimalista (Sem mistura de azul) */
     .stButton>button {
-        background: linear-gradient(90deg, #00E676 0%, #00B0FF 100%) !important; color: #020617 !important; border-radius: 16px !important;
-        padding: 16px !important; font-size: 1.05rem !important; font-weight: 800 !important;
-        width: 100%; border: none !important; box-shadow: 0 4px 25px rgba(0,230,118,0.25); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: #0F172A !important; 
+        color: #00E676 !important; 
+        border: 2px solid #00E676 !important; 
+        border-radius: 16px !important;
+        padding: 14px !important; 
+        font-size: 1rem !important; 
+        font-weight: 800 !important;
+        width: 100%; 
+        box-shadow: 0 4px 15px rgba(0, 230, 118, 0.1); 
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .stButton>button:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,230,118,0.45); }
+    .stButton>button:hover { 
+        background: #00E676 !important; 
+        color: #070A10 !important; 
+        box-shadow: 0 0 25px rgba(0, 230, 118, 0.4);
+        transform: translateY(-1px);
+    }
     
     /* Botão Sair Clean */
     div[data-testid="column"] button[key*="logout_btn"] {
         background: rgba(30, 41, 59, 0.5) !important; color: #F87171 !important; border: 1px solid rgba(248,113,113,0.2) !important; padding: 10px !important; font-size: 0.85rem !important; box-shadow: none !important; border-radius: 12px !important;
     }
+    div[data-testid="column"] button[key*="logout_btn"]:hover {
+        background: #F87171 !important; color: #FFFFFF !important;
+    }
 
     /* Ocultar Elementos Streamlit */
     .stDeployButton, footer, header, .stSidebar { display: none !important; }
     
-    /* Chat Avançado Modo Mensageria (Lado a Lado Estilizado) */
+    /* Chat Avançado Modo Mensageria */
     .chat-container { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; padding: 5px; }
     
     .chat-block-user { display: flex; justify-content: flex-end; width: 100%; }
@@ -279,7 +294,6 @@ with abas[0]:
             
             eixo_x = "Hora" if "Data" not in df_filtrado.columns else "Data"
             
-            # SOLUÇÃO DEFINITIVA: Paleta customizada manual em formato de lista (Evita AttributeError)
             paleta_neon_custom = ["#00E676", "#00B0FF", "#D500F9", "#651FFF", "#FF6D00"]
             
             fig = px.line(
@@ -378,7 +392,7 @@ with abas[0]:
 # --- COMPORTAMENTO DO PRODUTOR / ACADÊMICO / TESTE ---
 if not st.session_state.eh_admin:
     with abas[1]:
-        st.markdown("<h2>📝 Nova Amostragem Técnico</h2>", unsafe_allow_html=True)
+        st.markdown("<h2>📝 Nova Amostragem Técnica</h2>", unsafe_allow_html=True)
         with st.form("form_mobile_clean", clear_on_submit=True):
             f_sensor = st.selectbox("Identificação do Talhão/Estufa:", ["Talhão Norte", "Talhão Sul", "Setor Leste", "Estufa 01", "Estufa 02"])
             f_ph = st.number_input("Medição de pH de Solo (0.0 a 14.0)", min_value=0.0, max_value=14.0, value=6.5, step=0.1, format="%.1f")
