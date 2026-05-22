@@ -279,17 +279,18 @@ with abas[0]:
             
             eixo_x = "Hora" if "Data" not in df_filtrado.columns else "Data"
             
-            # Ajustado para usar uma paleta elegante nativa compatível com multicor e evitar o crash
+            # SOLUÇÃO DEFINITIVA: Paleta customizada manual em formato de lista (Evita AttributeError)
+            paleta_neon_custom = ["#00E676", "#00B0FF", "#D500F9", "#651FFF", "#FF6D00"]
+            
             fig = px.line(
                 df_filtrado.tail(10), x=eixo_x, y="Umidade", color=cor_grafico, 
-                markers=True, height=220, color_discrete_sequence=px.colors.qualitative.Neon
+                markers=True, height=220, color_discrete_sequence=paleta_neon_custom
             )
             fig.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
                 font_color="#94A3B8", margin=dict(l=10, r=10, t=10, b=10),
                 xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="#1E293B")
             )
-            # Customização segura sem sobrescrever a cor fixa gerada pelo agrupamento
             fig.update_traces(line=dict(width=3), marker=dict(size=8))
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
             
