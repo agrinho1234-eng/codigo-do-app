@@ -21,13 +21,20 @@ db = client["AgroData"]
 usuarios_coll = db["usuarios"]
 historico_coll = db["historico_sensores"]
 
-# --- CONFIGURAÇÃO DA IA SEGURA ---
-if "GOOGLE_API_KEY" in st.secrets:
-    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-else:
+# --- CONFIGURAÇÃO DA IA COM CONEXÃO DIRETA ---
+try:
+    if "GOOGLE_API_KEY" in st.secrets:
+        GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+    elif st.config.get_option("secrets.GOOGLE_API_KEY"):
+        GOOGLE_API_KEY = st.config.get_option("secrets.GOOGLE_API_KEY")
+    else:
+        GOOGLE_API_KEY = "AIzaSyDBItQq-Qu6atbjZL7Od1Buz6Fonmy_v6s"
+except:
     GOOGLE_API_KEY = "AIzaSyDBItQq-Qu6atbjZL7Od1Buz6Fonmy_v6s"
 
-genai.configure(api_key=GOOGLE_API_KEY)
+# Força a inicialização da API se a chave foi encontrada
+if GOOGLE_API_KEY:
+    genai.configure(api_key=GOOGLE_API_KEY)
 
 def buscar_modelo():
     try:
@@ -36,7 +43,8 @@ def buscar_modelo():
         for p in prioridade:
             if p in modelos: return genai.GenerativeModel(p)
         return genai.GenerativeModel(modelos[0])
-    except: return genai.GenerativeModel('gemini-1.5-flash')
+    except: 
+        return genai.GenerativeModel('gemini-1.5-flash')
 
 model = buscar_modelo()
 
@@ -124,7 +132,6 @@ if not st.session_state.autenticado:
             novo_user = st.text_input("Escolha o Usuário")
             nova_senha = st.text_input("Crie uma Senha", type="password")
             
-            # --- SELEÇÃO DE PERFIL AJUSTADA (APENAS ACADÊMICO) ---
             perfil_personalizado = st.selectbox(
                 "Qual é o seu perfil na lavoura?", 
                 [
@@ -232,11 +239,9 @@ with abas[0]:
         # IA Agrônomo com persistência no session_state
         st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
         
-        # Recupera o perfil real do banco de dados
         dados_usuario = usuarios_coll.find_one({"usuario": st.session_state.usuario_logado})
         perfil_usuario = dados_usuario.get("perfil", "Pequeno Produtor") if dados_usuario else "Pequeno Produtor"
 
-        # RECURSO VISUAL PARA O USUÁRIO DE TESTE PODER VER TODAS AS OPÇÕES DE PERFIS NA TELA:
         if "Entusiasta" in perfil_usuario or "Testes" in perfil_usuario:
             st.markdown("<h3 style='color:#2ea043;'>⚙️ MODO DE TESTES INTERATIVO</h3>", unsafe_allow_html=True)
             perfil_simulado = st.selectbox(
@@ -248,25 +253,28 @@ with abas[0]:
             perfil_alvo_ia = perfil_usuario
 
         if st.button("🤖 GERAR DIAGNÓSTICO IA DA LAVOURA"):
-            with st.spinner("Analisando solo..."):
-                try:
-                    # Prompt mestre dinâmico baseado na sua escolha de simulação ou perfil real
-                    prompt = f"""
-                    Você é um agrônomo sênior especialista em IA e inteligência de dados de solo.
-                    Analise os seguintes dados recentes de solo coletados: {df_filtrado.tail(3).to_string()}
-                    
-                    Gere um diagnóstico personalizado de no máximo 3 tópicos curtos adaptado para o perfil: "{perfil_alvo_ia}".
-                    
-                    Siga estritamente esta estratégia de resposta para o perfil selecionado:
-                    - Se for Pequeno Produtor: Foque em soluções práticas, manejos manuais ou orgânicos e adubos de baixo custo. Use linguagem simples.
-                    - Se for Médio Produtor: Foque em eficiência, custo-benefício de fertilizantes e táticas para aumentar a produtividade por hectare.
-                    - Se for Grande Produtor: Foque em alta tecnologia, correção de solo para maquinário pesado, agricultura de precisão e metas de larga escala.
-                    - Se for Agrônomo / Consultor: Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
-                    - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia estritamente científica.
-                    """
-                    st.session_state.diagnostico_ia = model.generate_content(prompt).text
-                except: 
-                    st.session_state.diagnostico_ia = "Erro ao conectar com a IA do Google. Verifique sua chave de API."
+            if not GOOGLE_API_KEY:
+                st.error("Erro: A chave 'GOOGLE_API_KEY' não foi encontrada nos Secrets do Streamlit.")
+            else:
+                with st.spinner("Analisando solo..."):
+                    try:
+                        prompt = f"""
+                        Você é um agrônomo sênior especialista em IA e inteligência de dados de solo.
+                        Analise os seguintes dados recentes de solo coletados: {df_filtrado.tail(3).to_string()}
+                        
+                        Gere um diagnóstico personalizado de no máximo 3 tópicos curtos adaptado para o perfil: "{perfil_alvo_ia}".
+                        
+                        Siga estritamente esta estratégia de resposta para o perfil selecionado:
+                        - Se for Pequeno Produtor: Foque em soluções práticas, manejos manuais ou orgânicos e adubos de baixo custo. Use linguagem simples.
+                        - Se for Médio Produtor: Foque em eficiência, custo-benefício de fertilizantes e táticas para aumentar a produtividade por hectare.
+                        - Se for Grande Produtor: Foque em alta tecnologia, correção de solo para maquinário pesado, agricultura de precisão e metas de larga escala.
+                        - Se for Agrônomo / Consultor: Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
+                        - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia estritamente científica.
+                        """
+                        resposta = model.generate_content(prompt)
+                        st.session_state.diagnostico_ia = resposta.text
+                    except Exception as e: 
+                        st.session_state.diagnostico_ia = f"Erro ao conectar com a IA do Google. Detalhes: {str(e)}"
         
         if st.session_state.diagnostico_ia:
             st.markdown("<div style='background-color:#161b22; padding:15px; border-radius:10px; border-left:4px solid #2ea043;'>", unsafe_allow_html=True)
