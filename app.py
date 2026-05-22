@@ -132,7 +132,7 @@ if not st.session_state.autenticado:
                     "Médio Produtor (Cultivos Comerciais e Grãos)", 
                     "Grande Produtor (Alta Tecnologia e Larga Escala)", 
                     "Agrônomo / Consultor (Foco em Relatórios Técnicos)",
-                    "Acadêmico (Análise Científica)",
+                    "Estudante / Pesquisador Acadêmico (Análise Científica)",
                     "Entusiasta / Usuário de Testes (Apenas conhecendo o app)"
                 ]
             )
@@ -238,21 +238,48 @@ with abas[0]:
                     dados_usuario = usuarios_coll.find_one({"usuario": st.session_state.usuario_logado})
                     perfil_usuario = dados_usuario.get("perfil", "Pequeno Produtor (Agricultura Familiar e Orgânicos)") if dados_usuario else "Pequeno Produtor"
 
-                    # Prompt com estratégia de inteligência expandida
-                    prompt = f"""
-                    Você é um agrônomo sênior especialista em IA e inteligência de dados de solo.
-                    Analise os seguintes dados recentes de solo: {df_filtrado.tail(3).to_string()}
+                    # Se for o usuário de testes/entusiasta, ativa a resposta mestre explicativa
+                    if "Entusiasta" in perfil_usuario or "Testes" in perfil_usuario:
+                        prompt = f"""
+                        Você é um agrônomo sênior especialista em IA. O usuário atual está no "Modo de Demonstração/Teste" do app para conhecer as funções.
+                        Analise estes dados de solo enviados: {df_filtrado.tail(3).to_string()}
+                        
+                        Crie um super painel comparativo mostrando como a nossa IA aborda esses mesmos dados de forma diferente para cada tipo de cliente. Organize exatamente assim, usando tópicos claros e diretos:
+                        
+                        🤖 **MODO DE DEMONSTRAÇÃO INTERATIVO**
+                        Aqui está como a nossa inteligência responde de forma estratégica para cada perfil do campo:
+                        
+                        🌱 **Se você entrar como Pequeno Produtor:**
+                        (Dê 1 conselho curto, de baixo custo e adubação manual/orgânica para o pH/umidade atuais)
+                        
+                        🚜 **Se você entrar como Médio Produtor:**
+                        (Dê 1 conselho rápido focado em custo-benefício de insumos e rendimento por hectare)
+                        
+                        🚀 **Se você entrar como Grande Produtor:**
+                        (Dê 1 recomendação de alta tecnologia, maquinário ou agricultura de precisão para esses dados)
+                        
+                        🔬 **Se você entrar como Estudante/Pesquisador:**
+                        (Explique resumidamente o conceito biológico/científico por trás desse nível atual de pH e umidade)
+                        
+                        💼 **Se você entrar como Agrônomo/Consultor:**
+                        (Simule um pequeno trecho de laudo ou parecer técnico formal sobre o estado atual do talhão)
+                        """
+                    else:
+                        # Prompt padrão individual para os outros perfis
+                        prompt = f"""
+                        Você é um agrônomo sênior especialista em IA e inteligência de dados de solo.
+                        Analise os seguintes dados recentes de solo: {df_filtrado.tail(3).to_string()}
+                        
+                        Gere um diagnóstico personalizado de no máximo 3 tópicos curtos para o perfil: "{perfil_usuario}".
+                        
+                        Siga estritamente esta estratégia de resposta para o perfil selecionado:
+                        - Se for Pequeno Produtor: Foque em soluções práticas, manejos manuais ou orgânicos e adubos de baixo custo. Use linguagem simples.
+                        - Se for Médio Produtor: Foque em eficiência, custo-benefício de fertilizantes e táticas para aumentar a produtividade por hectare.
+                        - Se for Grande Produtor: Foque em alta tecnologia, correção de solo para maquinário pesado, agricultura de precisão e metas de larga escala.
+                        - Se for Agrônomo / Consultor: Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
+                        - Se for Estudante / Pesquisador Acadêmico: Foque na explicação teórica e científica por trás dos dados (ex: dinâmica da água no solo, disponibilidade de nutrientes conforme o pH). Use termos acadêmicos e científicos.
+                        """
                     
-                    Gere um diagnóstico personalizado de no máximo 3 tópicos curtos para o perfil: "{perfil_usuario}".
-                    
-                    Siga estritamente esta estratégia de resposta para o perfil selecionado:
-                    - Se for Pequeno Produtor: Foque em soluções práticas, manejos manuais ou orgânicos e adubos de baixo custo. Use linguagem simples.
-                    - Se for Médio Produtor: Foque em eficiência, custo-benefício de fertilizantes e táticas para aumentar a produtividade por hectare.
-                    - Se for Grande Produtor: Foque em alta tecnologia, correção de solo para maquinário pesado, agricultura de precisão e metas de larga escala.
-                    - Se for Agrônomo / Consultor: Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
-                    - Se for Estudante / Pesquisador Acadêmico: Foque na explicação teórica e científica por trás dos dados (ex: dinâmica da água no solo, disponibilidade de nutrientes conforme o pH). Use termos acadêmicos e científicos.
-                    - Se for Entusiasta / Usuário de Testes: Faça um resumo super divertido, interativo e explicativo sobre como o app lê esses dados de solo, incentivando o usuário.
-                    """
                     st.session_state.diagnostico_ia = model.generate_content(prompt).text
                 except: 
                     st.session_state.diagnostico_ia = "Erro ao conectar com a IA do Google. Verifique sua chave de API."
