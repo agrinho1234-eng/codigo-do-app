@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import google.generativeai as genai
+import requests
+import json
 from pymongo import MongoClient
 import urllib.parse
 from bson.objectid import ObjectId
@@ -21,7 +22,7 @@ db = client["AgroData"]
 usuarios_coll = db["usuarios"]
 historico_coll = db["historico_sensores"]
 
-# --- CONFIGURAÇÃO DA IA ATUALIZADA ---
+# --- CONFIGURAÇÃO DA CHAVE DE API ---
 try:
     if "GOOGLE_API_KEY" in st.secrets:
         GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
@@ -32,8 +33,28 @@ try:
 except:
     GOOGLE_API_KEY = "AIzaSyDBItQq-Qu6atbjZL7Od1Buz6Fonmy_v6s"
 
-if GOOGLE_API_KEY:
-    genai.configure(api_key=GOOGLE_API_KEY)
+# --- FUNÇÃO DE REQUISIÇÃO DIRETA AO GEMINI (SEM DEPENDER DE BIBLIOTECA) ---
+def chamar_gemini_via_http(prompt_texto, api_key):
+    # Força a rota da API estável v1, evitando o erro 404 da v1beta antiga do servidor
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+    headers = {'Content-Type': 'application/json'}
+    payload = {
+        "contents": [
+            {
+                "parts": [{"text": prompt_texto}]
+            }
+        ]
+    }
+    
+    resposta = requests.post(url, headers=headers, json=payload)
+    if resposta.status_code == 200:
+        dados_resposta = resposta.json()
+        try:
+            return dados_resposta['candidates'][0]['content']['parts'][0]['text']
+        except:
+            return "Erro ao processar a resposta da IA."
+    else:
+        return f"Erro na API da Google: Status {resposta.status_code} - {resposta.text}"
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="AgroTech Mobile", layout="wide", page_icon="🚜", initial_sidebar_state="collapsed")
@@ -223,7 +244,7 @@ with abas[0]:
             st.markdown("<h3>📍 Localização dos Sensores</h3>", unsafe_allow_html=True)
             st.map(df_filtrado, height=220)
             
-        # IA Agrônomo com persistência no session_state
+        # IA Agrônomo
         st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
         
         dados_usuario = usuarios_coll.find_one({"usuario": st.session_state.usuario_logado})
@@ -244,33 +265,22 @@ with abas[0]:
                 st.error("Erro: A chave 'GOOGLE_API_KEY' não foi configurada nos Secrets do Streamlit.")
             else:
                 with st.spinner("Analisando solo..."):
-                    try:
-                        prompt = f"""
-                        Você é um agrônomo sênior especialista em IA e inteligência de dados de solo.
-                        Analise os seguintes dados recentes de solo coletados: {df_filtrado.tail(3).to_string()}
-                        
-                        Gere um diagnóstico personalizado de no máximo 3 tópicos curtos adaptado para o perfil: "{perfil_alvo_ia}".
-                        
-                        Siga estritamente esta estratégia de resposta para o perfil selecionado:
-                        - Se for Pequeno Produtor: Foque em soluções práticas, manejos manuais ou orgânicos e adubos de baixo custo. Use linguagem simples.
-                        - Se for Médio Produtor: Foque em eficiência, custo-benefício de fertilizantes e táticas para aumentar a produtividade por hectare.
-                        - Se for Grande Produtor: Foque em alta tecnologia, correção de solo para maquinário pesado, agricultura de precisão e metas de larga escala.
-                        - Se for Agrônomo / Consultor: Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
-                        - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia estritamente científica.
-                        """
-                        
-                        # CHAMADA DE COMPATIBILIDADE UNIVERSAL (Resolve o erro 404 de v1beta)
-                        ai_model = genai.GenerativeModel(model_name='gemini-1.5-flash')
-                        resposta = ai_model.generate_content(prompt)
-                        st.session_state.diagnostico_ia = resposta.text
-                    except Exception as e:
-                        try:
-                            # SEGUNDA TENTATIVA CASO O SERVIDOR SÓ TENHA MODELOS ANTIGOS
-                            ai_model = genai.GenerativeModel(model_name='gemini-pro')
-                            resposta = ai_model.generate_content(prompt)
-                            st.session_state.diagnostico_ia = resposta.text
-                        except Exception as e_interno:
-                            st.session_state.diagnostico_ia = f"Erro na requisição. Detalhes técnicos: {str(e_interno)}"
+                    prompt = f"""
+                    Você é um agrônomo sênior especialista em IA e inteligência de dados de solo.
+                    Analise os seguintes dados recentes de solo coletados: {df_filtrado.tail(3).to_string()}
+                    
+                    Gere um diagnóstico personalizado de no máximo 3 tópicos curtos adaptado para o perfil: "{perfil_alvo_ia}".
+                    
+                    Siga estritamente esta estratégia de resposta para o perfil selecionado:
+                    - Se for Pequeno Produtor: Foque em soluções práticas, manejos manuais ou orgânicos e adubos de baixo custo. Use linguagem simples.
+                    - Se for Médio Produtor: Foque em eficiência, custo-benefício de fertilizantes e táticas para aumentar a produtividade por hectare.
+                    - Se for Grande Produtor: Foque em alta tecnologia, correção de solo para maquinário pesado, agricultura de precisão e metas de larga escala.
+                    - Se for Agrônomo / Consultor: Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
+                    - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia estritamente científica.
+                    """
+                    
+                    # Chamada direta via HTTP Bypass (Garante o funcionamento sem erros 404 de biblioteca)
+                    st.session_state.diagnostico_ia = chamar_gemini_via_http(prompt, GOOGLE_API_KEY)
         
         if st.session_state.diagnostico_ia:
             st.markdown("<div style='background-color:#161b22; padding:15px; border-radius:10px; border-left:4px solid #2ea043;'>", unsafe_allow_html=True)
