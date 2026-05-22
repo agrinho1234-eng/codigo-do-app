@@ -33,17 +33,10 @@ try:
 except:
     GOOGLE_API_KEY = ""
 
-# COLOQUE A LINHA DE TESTE EXATAMENTE AQUI:
-st.write(f"Tamanho da chave: {len(GOOGLE_API_KEY)} | Começa com AIza: {GOOGLE_API_KEY.startswith('AIza')}")
-
 # --- FUNÇÃO DE REQUISIÇÃO DIRETA ATUALIZADA (SISTEMA DE CONTINGÊNCIA REGIONAL) ---
 def chamar_gemini_vias_puras(prompt_texto, api_key):
-    # Lista de endpoints oficiais atualizados da Google (testa v1 e v1beta com variações de ID do Flash)
-    endpoints = [
-        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}",
-        f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}",
-        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
-    ]
+    # Rota oficial e atualizada da API estável v1 da Google
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
     
     headers = {'Content-Type': 'application/json'}
     payload = {
@@ -54,24 +47,25 @@ def chamar_gemini_vias_puras(prompt_texto, api_key):
         }]
     }
     
-    erros_acumulados = []
-    
-    # Varre os endpoints disponíveis até encontrar o ativo para a sua região
-    for url in endpoints:
-        try:
-            resposta = requests.post(url, headers=headers, json=payload, timeout=15)
-            if resposta.status_code == 200:
-                dados = resposta.json()
-                return dados['candidates'][0]['content']['parts'][0]['text']
-            else:
-                # Extrai o nome do modelo testado para exibir no log de erro se falhar completamente
-                modelo_testado = url.split("/models/")[1].split(":")[0]
-                erros_acumulados.append(f"{modelo_testado} (Status {resposta.status_code})")
-        except Exception as e:
-            erros_acumulados.append(f"Erro de conexão: {str(e)}")
+    try:
+        resposta = requests.post(url, headers=headers, json=payload, timeout=15)
+        
+        if resposta.status_code == 200:
+            dados = resposta.json()
+            return dados['candidates'][0]['content']['parts'][0]['text']
+        else:
+            # Se a rota estável principal falhar, tentamos a rota secundária v1beta como plano B automático
+            url_beta = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+            resposta_beta = requests.post(url_beta, headers=headers, json=payload, timeout=15)
             
-    # Se todas as rotas falharem, exibe o diagnóstico detalhado das tentativas
-    return f"Erro de mapeamento regional na Google. Tentativas falhas: {', '.join(erros_acumulados)}. Certifique-se de que a API Key foi gerada na opção 'New Project' do Google AI Studio."
+            if resposta_beta.status_code == 200:
+                dados_beta = resposta_beta.json()
+                return dados_beta['candidates'][0]['content']['parts'][0]['text']
+            
+            return f"Erro na IA (Status {resposta.status_code}). Detalhes: {resposta.text}"
+            
+    except Exception as e:
+        return f"Falha de conexão com os servidores da Google: {str(e)}"
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="AgroTech Mobile", layout="wide", page_icon="🚜", initial_sidebar_state="collapsed")
@@ -296,7 +290,7 @@ with abas[0]:
                     - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia estritamente científica.
                     """
                     
-                    # Chamada com o mecanismo de varredura inteligente
+                    # Chamada com a nova inteligência de motor v1 estável
                     st.session_state.diagnostico_ia = chamar_gemini_vias_puras(prompt, GOOGLE_API_KEY)
         
         if st.session_state.diagnostico_ia:
