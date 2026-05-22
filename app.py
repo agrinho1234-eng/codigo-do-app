@@ -7,6 +7,8 @@ from pymongo import MongoClient
 import urllib.parse
 from bson.objectid import ObjectId
 
+st.write(f"Tamanho da chave: {len(GOOGLE_API_KEY)} | Começa com AIza: {GOOGLE_API_KEY.startswith('AIza')}")
+
 # --- CONFIGURAÇÃO DO MONGODB ---
 usuario = "agrinho1234_db_user"
 senha_pura = "Agrinho@2000"
