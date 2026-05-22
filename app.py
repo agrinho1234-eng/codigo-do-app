@@ -109,6 +109,10 @@ st.markdown("""
     
     .stDeployButton, footer, header, .stSidebar { display: none !important; }
     div[data-testid="stMetricValue"] { font-size: 1.5rem !important; }
+
+    /* Estilo para caixas de mensagens no chat */
+    .chat-user { background-color: #21262d; border-radius: 10px; padding: 10px; margin-bottom: 8px; border: 1px solid #30363d; text-align: right; color: #ffffff; }
+    .chat-ia { background-color: #1f2937; border-radius: 10px; padding: 12px; margin-bottom: 15px; border-left: 4px solid #2ea043; color: #e5e7eb; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -117,6 +121,7 @@ if 'autenticado' not in st.session_state: st.session_state.autenticado = False
 if 'usuario_logado' not in st.session_state: st.session_state.usuario_logado = None
 if 'eh_admin' not in st.session_state: st.session_state.eh_admin = False
 if 'diagnostico_ia' not in st.session_state: st.session_state.diagnostico_ia = ""
+if 'historico_conversa' not in st.session_state: st.session_state.historico_conversa = []
 
 # --- TELA DE LOGIN ---
 if not st.session_state.autenticado:
@@ -199,6 +204,7 @@ with top_c2:
         st.session_state.usuario_logado = None
         st.session_state.eh_admin = False
         st.session_state.diagnostico_ia = ""
+        st.session_state.historico_conversa = []
         st.rerun()
 
 st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
@@ -242,7 +248,6 @@ with abas[0]:
             st.markdown("<h3>📈 Histórico Recente de Umidade</h3>", unsafe_allow_html=True)
             cor_grafico = "usuario" if st.session_state.eh_admin and filtro_usuario == "Todos os Produtores" else "Sensor"
             
-            # Gráfico agora pode usar Hora ou Data se houver múltiplas medições
             eixo_x = "Hora" if "Data" not in df_filtrado.columns else "Data"
             fig = px.line(df_filtrado.tail(10), x=eixo_x, y="Umidade", color=cor_grafico, markers=True, height=220)
             fig.update_layout(
@@ -256,7 +261,7 @@ with abas[0]:
             st.markdown("<h3>📍 Localização dos Sensores</h3>", unsafe_allow_html=True)
             st.map(df_filtrado, height=220)
             
-        # IA Agrônomo
+        # IA Agrônomo - Diagnóstico Fixo
         st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
         
         dados_usuario = usuarios_coll.find_one({"usuario": st.session_state.usuario_logado})
@@ -288,16 +293,58 @@ with abas[0]:
                     - Se for Médio Produtor: Foque em eficiência, custo-benefício de fertilizantes e táticas para aumentar a produtividade por hectare.
                     - Se for Grande Produtor: Foque em alta tecnologia, correção de solo para maquinário pesado, agricultura de precisão e metas de larga escala.
                     - Se for Agrônomo / Consultor: Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
-                    - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia estritamente científica.
+                    - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa. Use terminologia estritamente científica.
                     """
                     st.session_state.diagnostico_ia = chamar_gemini_vias_puras(prompt, GOOGLE_API_KEY)
         
         if st.session_state.diagnostico_ia:
-            st.markdown("<div style='background-color:#161b22; padding:15px; border-radius:10px; border-left:4px solid #2ea043;'>", unsafe_allow_html=True)
+            st.markdown("<div style='background-color:#161b22; padding:15px; border-radius:10px; border-left:4px solid #2ea043; margin-bottom: 20px;'>", unsafe_allow_html=True)
             if "Entusiasta" in perfil_usuario or "Testes" in perfil_usuario:
                 st.markdown(f"**💡 Exibindo resposta simulada para: {perfil_alvo_ia}**")
             st.write(st.session_state.diagnostico_ia)
             st.markdown("</div>", unsafe_allow_html=True)
+
+        # 💬 NOVA SEÇÃO: CHAT INTERATIVO COM A IA
+        st.markdown("---")
+        st.markdown("<h3>💬 Converse com o Agrônomo de IA</h3>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size:0.85rem; color:#8b949e;'>Tire dúvidas sobre correção de pH, manejo de umidade ou dicas de plantio para os seus talhões.</p>", unsafe_allow_html=True)
+        
+        # Mostrar o histórico de mensagens trocadas nesta sessão
+        for msg in st.session_state.historico_conversa:
+            if msg["role"] == "user":
+                st.markdown(f"<div class='chat-user'><b>Você:</b> {msg['text']}</div>", unsafe_allow_html=True)
+            else:
+                st.markdown(f"<div class='chat-ia'><b>🤖 AgroIA:</b> {msg['text']}</div>", unsafe_allow_html=True)
+        
+        # Caixa de entrada para a pergunta do usuário
+        pergunta_usuario = st.chat_input("Digite sua dúvida sobre a lavoura aqui...")
+        
+        if pergunta_usuario:
+            # Salva a pergunta do usuário no histórico e atualiza a tela
+            st.session_state.historico_conversa.append({"role": "user", "text": pergunta_usuario})
+            
+            if not GOOGLE_API_KEY:
+                st.session_state.historico_conversa.append({"role": "ia", "text": "Erro: Chave API Key ausente."})
+            else:
+                with st.spinner("Pensando na resposta..."):
+                    # Contextualiza a IA com os dados atuais e o perfil do produtor
+                    prompt_chat = f"""
+                    Você é um Assistente Agrônomo Virtual Inteligente criado para o projeto Agrinho. 
+                    Seu objetivo é ajudar produtores rurais de forma prática e direta.
+                    
+                    Contexto atual da lavoura deste produtor:
+                    {df_filtrado.tail(3).to_string()}
+                    
+                    Perfil do Produtor: {perfil_alvo_ia}
+                    
+                    Responda à seguinte dúvida de forma clara, prestativa e objetiva:
+                    "{pergunta_usuario}"
+                    """
+                    resposta_ia = chamar_gemini_vias_puras(prompt_chat, GOOGLE_API_KEY)
+                    # Salva a resposta da IA no histórico
+                    st.session_state.historico_conversa.append({"role": "ia", "text": resposta_ia})
+            st.rerun()
+
     else:
         st.info("Nenhum dado cadastrado para exibição.")
 
@@ -334,8 +381,6 @@ if not st.session_state.eh_admin:
         st.markdown("<h2>📋 Seus Dados Enviados</h2>", unsafe_allow_html=True)
         if not df_filtrado.empty:
             df_tab = df_filtrado.copy().drop(columns=['_id', 'usuario'], errors='ignore')
-            
-            # Reordenar colunas de forma amigável se a Data existir
             colunas_certas = [c for c in ["Data", "Hora", "Sensor", "pH", "Umidade", "latitude", "longitude"] if c in df_tab.columns]
             st.dataframe(df_tab[colunas_certas], use_container_width=True, hide_index=True)
         else: 
@@ -343,7 +388,6 @@ if not st.session_state.eh_admin:
 
 # --- COMPORTAMENTO DO ADMIN ---
 else:
-    # ABA 2 ADMIN: MODERAR DADOS DO HISTÓRICO
     with abas[1]:
         st.markdown("<h2>🛠️ Painel Host de Moderação</h2>", unsafe_allow_html=True)
         if not df_filtrado.empty:
@@ -368,7 +412,6 @@ else:
             st.markdown("---")
             st.markdown("<h3>🗑️ Apagar Registro de Medição</h3>", unsafe_allow_html=True)
             
-            # Exibe a data na seleção caso ela exista
             opcoes_delecao = []
             for i, row in df_filtrado.iterrows():
                 dt_str = row.get('Data', 'Sem Data')
@@ -383,11 +426,8 @@ else:
                 st.success("Registro de medição removido!")
                 st.rerun()
 
-    # ABA 3 ADMIN: GERENCIAR E EXCLUIR CONTAS DE USUÁRIOS
     with abas[2]:
         st.markdown("<h2>👥 Controle de Contas Cadastradas</h2>", unsafe_allow_html=True)
-        
-        # Carregar todas as contas do banco
         todas_contas = list(usuarios_coll.find({}))
         df_contas = pd.DataFrame(todas_contas)
         
@@ -399,22 +439,16 @@ else:
             st.markdown("---")
             st.markdown("<h3>🚨 Excluir Conta do Sistema</h3>", unsafe_allow_html=True)
             
-            # Impedir o admin de deletar o próprio login administrador que ele está usando
             lista_usuarios = [row['usuario'] for _, row in df_contas.iterrows() if row['usuario'] != st.session_state.usuario_logado]
             
             if lista_usuarios:
                 conta_para_deletar = st.selectbox("Selecione o usuário para deletar do sistema:", lista_usuarios)
-                
-                # Alerta e verificação extra de segurança para exclusão
                 confirmar_exclusao = st.checkbox(f"Eu tenho certeza que quero apagar a conta de '{conta_para_deletar}' e todos os dados vinculados.")
                 
                 if st.button("❌ APAGAR CONTA DEFINITIVAMENTE"):
                     if confirmar_exclusao:
-                        # 1. Apaga os dados de medição que o usuário enviou
                         historico_coll.delete_many({"usuario": conta_para_deletar})
-                        # 2. Apaga a conta do banco de dados
                         usuarios_coll.delete_one({"usuario": conta_para_deletar})
-                        
                         st.success(f"A conta de '{conta_para_deletar}' e seu histórico foram removidos do servidor.")
                         st.rerun()
                     else:
