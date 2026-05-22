@@ -33,10 +33,10 @@ try:
 except:
     GOOGLE_API_KEY = ""
 
-# --- FUNÇÃO DE REQUISIÇÃO DIRETA ATUALIZADA (SISTEMA DE CONTINGÊNCIA REGIONAL) ---
+# --- FUNÇÃO DE REQUISIÇÃO DIRETA COM MODELO UNIVERSAL ---
 def chamar_gemini_vias_puras(prompt_texto, api_key):
-    # Rota oficial e atualizada da API estável v1 da Google
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+    # Mudança para o modelo estável universal que não sofre bloqueio regional de v1/v1beta
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
     
     headers = {'Content-Type': 'application/json'}
     payload = {
@@ -54,14 +54,14 @@ def chamar_gemini_vias_puras(prompt_texto, api_key):
             dados = resposta.json()
             return dados['candidates'][0]['content']['parts'][0]['text']
         else:
-            # Se a rota estável principal falhar, tentamos a rota secundária v1beta como plano B automático
-            url_beta = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-            resposta_beta = requests.post(url_beta, headers=headers, json=payload, timeout=15)
+            # Plano alternativo se a conta exigir o sufixo numérico do modelo estático
+            url_alt = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key={api_key}"
+            resposta_alt = requests.post(url_alt, headers=headers, json=payload, timeout=15)
             
-            if resposta_beta.status_code == 200:
-                dados_beta = resposta_beta.json()
-                return dados_beta['candidates'][0]['content']['parts'][0]['text']
-            
+            if resposta_alt.status_code == 200:
+                dados_alt = resposta_alt.json()
+                return dados_alt['candidates'][0]['content']['parts'][0]['text']
+                
             return f"Erro na IA (Status {resposta.status_code}). Detalhes: {resposta.text}"
             
     except Exception as e:
@@ -290,7 +290,7 @@ with abas[0]:
                     - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia estritamente científica.
                     """
                     
-                    # Chamada com a nova inteligência de motor v1 estável
+                    # Chamada com o modelo Gemini Pro universal
                     st.session_state.diagnostico_ia = chamar_gemini_vias_puras(prompt, GOOGLE_API_KEY)
         
         if st.session_state.diagnostico_ia:
