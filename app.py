@@ -21,30 +21,30 @@ db = client["AgroData"]
 usuarios_coll = db["usuarios"]
 historico_coll = db["historico_sensores"]
 
-# --- CONFIGURAÇÃO DA IA COM CONEXÃO DIRETA ---
+# --- CONFIGURAÇÃO DA IA RESTRUTURADA ---
 try:
     if "GOOGLE_API_KEY" in st.secrets:
         GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
     elif st.config.get_option("secrets.GOOGLE_API_KEY"):
         GOOGLE_API_KEY = st.config.get_option("secrets.GOOGLE_API_KEY")
     else:
-        GOOGLE_API_KEY = "AIzaSyDBItQq-Qu6atbjZL7Od1Buz6Fonmy_v6s"
+        GOOGLE_API_KEY = ""
 except:
-    GOOGLE_API_KEY = "AIzaSyDBItQq-Qu6atbjZL7Od1Buz6Fonmy_v6s"
+    GOOGLE_API_KEY = ""
 
-# Força a inicialização da API se a chave foi encontrada
 if GOOGLE_API_KEY:
     genai.configure(api_key=GOOGLE_API_KEY)
 
 def buscar_modelo():
+    # Tenta usar a chamada simplificada padrão da API moderna
     try:
-        modelos = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        prioridade = ['models/gemini-1.5-flash', 'models/gemini-pro']
-        for p in prioridade:
-            if p in modelos: return genai.GenerativeModel(p)
-        return genai.GenerativeModel(modelos[0])
-    except: 
         return genai.GenerativeModel('gemini-1.5-flash')
+    except:
+        try:
+            # Fallback para o modelo legado caso a biblioteca esteja desatualizada no servidor
+            return genai.GenerativeModel('gemini-pro')
+        except:
+            return None
 
 model = buscar_modelo()
 
@@ -254,7 +254,9 @@ with abas[0]:
 
         if st.button("🤖 GERAR DIAGNÓSTICO IA DA LAVOURA"):
             if not GOOGLE_API_KEY:
-                st.error("Erro: A chave 'GOOGLE_API_KEY' não foi encontrada nos Secrets do Streamlit.")
+                st.error("Erro: A chave 'GOOGLE_API_KEY' não foi configurada nos Secrets do Streamlit.")
+            elif model is None:
+                st.error("Erro técnico: O Google mudou a rota desse modelo. Verifique os logs.")
             else:
                 with st.spinner("Analisando solo..."):
                     try:
@@ -274,7 +276,7 @@ with abas[0]:
                         resposta = model.generate_content(prompt)
                         st.session_state.diagnostico_ia = resposta.text
                     except Exception as e: 
-                        st.session_state.diagnostico_ia = f"Erro ao conectar com a IA do Google. Detalhes: {str(e)}"
+                        st.session_state.diagnostico_ia = f"Erro ao gerar conteúdo. Detalhes técnicos: {str(e)}"
         
         if st.session_state.diagnostico_ia:
             st.markdown("<div style='background-color:#161b22; padding:15px; border-radius:10px; border-left:4px solid #2ea043;'>", unsafe_allow_html=True)
