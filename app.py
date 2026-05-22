@@ -68,51 +68,71 @@ def chamar_gemini_vias_puras(prompt_texto, api_key):
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="AgroTech Mobile", layout="wide", page_icon="🚜", initial_sidebar_state="collapsed")
 
-# --- DESIGN SYSTEM ULTRA-MOBILE (CSS) ---
+# --- DESIGN SYSTEM PREMIUM ULTRA-MOBILE (CSS ATUALIZADO) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #0D1117; color: #C9D1D9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    h1 { font-size: 1.8rem !important; font-weight: 800 !important; color: #2ea043; text-align: center; margin-bottom: 5px !important; }
-    h2 { font-size: 1.4rem !important; font-weight: 700 !important; color: #ffffff; }
-    h3 { font-size: 1.1rem !important; font-weight: 600 !important; color: #8b949e; }
+    /* Fundo Geral e Tipografia */
+    .stApp { background-color: #0B0F17; color: #E2E8F0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    
+    /* Títulos Principais */
+    h1 { font-size: 2rem !important; font-weight: 800 !important; color: #00E676; text-align: center; margin-bottom: 2px !important; letter-spacing: -0.5px; text-shadow: 0px 4px 12px rgba(0,230,118,0.2); }
+    h2 { font-size: 1.5rem !important; font-weight: 700 !important; color: #FFFFFF; border-bottom: 2px solid #1F2937; padding-bottom: 8px; margin-bottom: 15px; }
+    h3 { font-size: 1.15rem !important; font-weight: 600 !important; color: #94A3B8; margin-top: 10px; margin-bottom: 10px; }
 
+    /* Estilização das Abas (Tabs) */
     .stTabs [data-baseweb="tab-list"] { 
-        gap: 5px; background-color: #161b22; padding: 6px; border-radius: 14px; border-bottom: none; margin-bottom: 15px;
+        gap: 8px; background-color: #151F32; padding: 6px; border-radius: 16px; border-bottom: none; margin-bottom: 20px; box-shadow: inset 0px 2px 4px rgba(0,0,0,0.4);
     }
     .stTabs [data-baseweb="tab"] {
-        background-color: transparent; border-radius: 10px; padding: 12px 10px;
-        color: #8b949e !important; font-weight: bold; font-size: 0.85rem !important;
-        border: none !important; flex-grow: 1; text-align: center;
+        background-color: transparent; border-radius: 12px; padding: 12px 8px;
+        color: #64748B !important; font-weight: 700; font-size: 0.85rem !important;
+        border: none !important; flex-grow: 1; text-align: center; transition: all 0.2s ease-in-out;
     }
     .stTabs [aria-selected="true"] { 
-        background-color: #21262d !important; color: #2ea043 !important;
-        border: 1px solid #30363d !important; box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+        background-color: #1E293B !important; color: #00E676 !important;
+        border: 1px solid rgba(255,255,255,0.05) !important; box-shadow: 0px 4px 12px rgba(0,0,0,0.4);
     }
 
+    /* Cards de Dados (Glassmorphism) */
     .mobile-card {
-        background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 15px;
-        margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;
+        background: linear-gradient(135deg, #1E293B 0%, #111827 100%); 
+        border: 1px solid rgba(255, 255, 255, 0.05); 
+        border-radius: 16px; padding: 18px; margin-bottom: 12px; 
+        display: flex; align-items: center; justify-content: space-between;
+        box-shadow: 0px 6px 15px rgba(0,0,0,0.25);
     }
-    .mobile-card-title { color: #8b949e; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; }
-    .mobile-card-value { color: #ffffff; font-size: 1.4rem; font-weight: 700; margin-top: 2px; }
+    .mobile-card-title { color: #94A3B8; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .mobile-card-value { color: #FFFFFF; font-size: 1.6rem; font-weight: 800; margin-top: 4px; }
 
-    input, select, .stSelectbox, div[data-baseweb="select"] {
-        background-color: #21262d !important; border-radius: 8px !important; color: white !important;
+    /* Inputs e Seletores */
+    input, select, .stSelectbox, div[data-baseweb="select"], .stNumberInput input {
+        background-color: #1E293B !important; border: 1px solid #334155 !important; border-radius: 12px !important; color: #F8FAFC !important;
     }
     
+    /* Botões Grandes e Estilizados */
     .stButton>button {
-        background-color: #238636 !important; color: white !important; border-radius: 12px !important;
-        padding: 16px !important; font-size: 1rem !important; font-weight: 700 !important;
-        width: 100%; border: none !important; box-shadow: 0 4px 12px rgba(35,134,54,0.3);
+        background: linear-gradient(90deg, #00C853 0%, #00E676 100%) !important; color: #050505 !important; border-radius: 14px !important;
+        padding: 14px !important; font-size: 1rem !important; font-weight: 800 !important;
+        width: 100%; border: none !important; box-shadow: 0 4px 20px rgba(0,230,118,0.25); transition: all 0.2s;
     }
-    .stButton>button:active { background-color: #2ea043 !important; }
+    .stButton>button:hover { transform: translateY(-1px); box-shadow: 0 6px 25px rgba(0,230,118,0.4); }
+    .stButton>button:active { transform: translateY(1px); }
     
-    .stDeployButton, footer, header, .stSidebar { display: none !important; }
-    div[data-testid="stMetricValue"] { font-size: 1.5rem !important; }
+    /* Botão de Logout Secundário */
+    div[data-testid="column"] button[key*="logout_btn"] {
+        background: #1E293B !important; color: #EF4444 !important; border: 1px solid #EF4444 !important; padding: 8px !important; font-size: 0.85rem !important; box-shadow: none !important;
+    }
 
-    /* Estilo para caixas de mensagens no chat */
-    .chat-user { background-color: #21262d; border-radius: 10px; padding: 10px; margin-bottom: 8px; border: 1px solid #30363d; text-align: right; color: #ffffff; }
-    .chat-ia { background-color: #1f2937; border-radius: 10px; padding: 12px; margin-bottom: 15px; border-left: 4px solid #2ea043; color: #e5e7eb; }
+    /* Ocultar Elementos Padrão do Streamlit */
+    .stDeployButton, footer, header, .stSidebar { display: none !important; }
+    
+    /* Estilo do Chat de IA Premium */
+    .chat-container { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
+    .chat-user { background-color: #1E293B; border-radius: 16px 16px 2px 16px; padding: 12px 16px; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.03); text-align: left; color: #F1F5F9; align-self: flex-end; max-width: 85%; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+    .chat-ia { background: linear-gradient(135deg, #111827 0%, #0F172A 100%); border-radius: 16px 16px 16px 2px; padding: 14px 18px; margin-bottom: 12px; border-left: 4px solid #00E676; border-top: 1px solid rgba(255,255,255,0.03); color: #E2E8F0; align-self: flex-start; max-width: 85%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    
+    /* Caixa de Resposta de Diagnóstico Rápido */
+    .diagnostico-box { background: linear-gradient(180deg, #152238 0%, #0F172A 100%); padding: 18px; border-radius: 14px; border-left: 4px solid #00E676; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin-bottom: 20px; border-top: 1px solid rgba(255,255,255,0.05); }
     </style>
     """, unsafe_allow_html=True)
 
@@ -125,9 +145,9 @@ if 'historico_conversa' not in st.session_state: st.session_state.historico_conv
 
 # --- TELA DE LOGIN ---
 if not st.session_state.autenticado:
-    st.markdown("<div style='margin-top: 40px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 50px;'></div>", unsafe_allow_html=True)
     st.markdown("<h1>🚜 AGROTECH PRO</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color:#8b949e; font-size:0.9rem;'>Monitoramento Inteligente de Solo</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color:#64748B; font-size:0.95rem; font-weight:500;'>Inteligência e Monitoramento de Solo</p>", unsafe_allow_html=True)
     
     aba_login, aba_cadastro = st.tabs(["🔒 ENTRAR", "✨ NOVA CONTA"])
     
@@ -135,7 +155,7 @@ if not st.session_state.autenticado:
         with st.form("form_login"):
             user_input = st.text_input("Usuário", placeholder="Ex: produtor1")
             senha_input = st.text_input("Senha", type="password", placeholder="******")
-            btn_login = st.form_submit_button("ENTRAR NO APP")
+            btn_login = st.form_submit_button("ACESSAR PAINEL")
             
             if btn_login:
                 user_limpo = user_input.strip().lower()
@@ -147,7 +167,7 @@ if not st.session_state.autenticado:
                     st.session_state.eh_admin = usuario_no_banco.get("tipo") == "admin"
                     st.rerun()
                 else: 
-                    st.error("Dados incorretos.")
+                    st.error("Usuário ou senha incorretos.")
                         
     with aba_cadastro:
         with st.form("form_cadastro"):
@@ -165,14 +185,14 @@ if not st.session_state.autenticado:
                     "Entusiasta / Usuário de Testes (Apenas conhecendo o app)"
                 ]
             )
-            btn_cadastrar = st.form_submit_button("CADASTRAR")
+            btn_cadastrar = st.form_submit_button("CRIAR MINHA CONTA")
             
             if btn_cadastrar:
                 novo_user_limpo = novo_user.strip().lower()
                 nova_senha_limpa = nova_senha.strip()
                 if novo_user_limpo and nova_senha_limpa:
                     if usuarios_coll.find_one({"usuario": novo_user_limpo}): 
-                        st.warning("Usuário indisponível.")
+                        st.warning("Este nome de usuário já está em uso.")
                     else:
                         usuarios_coll.insert_one({
                             "usuario": novo_user_limpo, 
@@ -180,9 +200,9 @@ if not st.session_state.autenticado:
                             "tipo": "comum",
                             "perfil": perfil_personalizado
                         })
-                        st.success("Cadastrado com sucesso! Mude para a aba 'ENTRAR'.")
+                        st.success("Conta criada! Alterne para a aba 'ENTRAR'.")
                 else: 
-                    st.error("Preencha todos os campos.")
+                    st.error("Preencha todos os campos obrigatórios.")
     st.stop()
 
 # --- CARREGAMENTO DE DADOS ---
@@ -194,10 +214,10 @@ else:
 df_filtrado = pd.DataFrame(dados_do_banco)
 
 # --- MINI BARRA DE TOPO APP ---
-top_c1, top_c2 = st.columns([3, 1])
+top_c1, top_c2 = st.columns([4, 1])
 with top_c1:
-    tag = "👑 Admin" if st.session_state.eh_admin else "👨‍🌾 Campo"
-    st.markdown(f"<p style='margin: 0; padding-top: 5px; font-size: 1rem; color: white;'><b>{st.session_state.usuario_logado}</b> <span style='color:#2ea043;'>({tag})</span></p>", unsafe_allow_html=True)
+    tag = "👑 Administrador" if st.session_state.eh_admin else "👨‍🌾 Campo"
+    st.markdown(f"<p style='margin: 0; padding-top: 8px; font-size: 1.05rem; color: #FFFFFF;'>Olá, <b>{st.session_state.usuario_logado}</b> <span style='color:#00E676; font-size:0.85rem;'>[{tag}]</span></p>", unsafe_allow_html=True)
 with top_c2:
     if st.button("🚪 Sair", key="logout_btn"):
         st.session_state.autenticado = False
@@ -207,7 +227,7 @@ with top_c2:
         st.session_state.historico_conversa = []
         st.rerun()
 
-st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='margin-bottom: 15px;'></div>", unsafe_allow_html=True)
 
 # --- ABAS DE NAVEGAÇÃO APP ---
 if st.session_state.eh_admin:
@@ -221,44 +241,45 @@ abas = st.tabs(abas_sistema)
 with abas[0]:
     if st.session_state.eh_admin and not df_filtrado.empty:
         usuarios_disponiveis = ["Todos os Produtores"] + list(df_filtrado["usuario"].unique())
-        filtro_usuario = st.selectbox("Ver dados de:", usuarios_disponiveis)
+        filtro_usuario = st.selectbox("Filtrar visualização por:", usuarios_disponiveis)
         if filtro_usuario != "Todos os Produtores":
             df_filtrado = df_filtrado[df_filtrado["usuario"] == filtro_usuario]
 
     if not df_filtrado.empty:
         ult = df_filtrado.iloc[-1]
         
-        # Grid de Cards Customizados
+        # Grid de Cards Customizados Glassmorphism
         c_p1, c_p2 = st.columns(2)
         with c_p1:
-            st.markdown(f"""<div class='mobile-card'><div style='text-align:left;'><div class='mobile-card-title'>🌱 Acidez pH</div><div class='mobile-card-value'>{ult['pH']}</div></div><div style='font-size:1.8rem;'>🧪</div></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class='mobile-card'><div style='text-align:left;'><div class='mobile-card-title'>🌱 Acidez do Solo</div><div class='mobile-card-value'>{ult['pH']} pH</div></div><div style='font-size:2rem; filter: drop-shadow(0 0 8px rgba(0,230,118,0.4));'>🧪</div></div>""", unsafe_allow_html=True)
         with c_p2:
-            st.markdown(f"""<div class='mobile-card'><div style='text-align:left;'><div class='mobile-card-title'>💧 Umidade</div><div class='mobile-card-value'>{ult['Umidade']}%</div></div><div style='font-size:1.8rem;'>💧</div></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class='mobile-card'><div style='text-align:left;'><div class='mobile-card-title'>💧 Umidade Recente</div><div class='mobile-card-value'>{ult['Umidade']}%</div></div><div style='font-size:2rem; filter: drop-shadow(0 0 8px #38bdf8);'>💧</div></div>""", unsafe_allow_html=True)
             
         c_p3, c_p4 = st.columns(2)
         with c_p3:
-            st.markdown(f"""<div class='mobile-card'><div style='text-align:left;'><div class='mobile-card-title'>📍 Setor Ativo</div><div class='mobile-card-value' style='font-size:0.95rem; padding-top:6px;'>{ult['Sensor']}</div></div></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class='mobile-card'><div style='text-align:left;'><div class='mobile-card-title'>📍 Setor Ativo</div><div class='mobile-card-value' style='font-size:1.1rem; padding-top:8px;'>{ult['Sensor']}</div></div><div style='font-size:1.8rem;'>🗺️</div></div>""", unsafe_allow_html=True)
         with c_p4:
-            st.markdown(f"""<div class='mobile-card'><div style='text-align:left;'><div class='mobile-card-title'>📈 Envios</div><div class='mobile-card-value'>{len(df_filtrado)}</div></div><div style='font-size:1.8rem;'>📊</div></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class='mobile-card'><div style='text-align:left;'><div class='mobile-card-title'>📈 Leituras Salvas</div><div class='mobile-card-value'>{len(df_filtrado)}</div></div><div style='font-size:2rem;'>📊</div></div>""", unsafe_allow_html=True)
 
-        # Seção Visual
+        # Seção Gráficos e Mapas
         col_visual_esq, col_visual_dir = st.columns([1.2, 1])
         
         with col_visual_esq:
-            st.markdown("<h3>📈 Histórico Recente de Umidade</h3>", unsafe_allow_html=True)
+            st.markdown("<h3>📈 Linha do Tempo de Umidade</h3>", unsafe_allow_html=True)
             cor_grafico = "usuario" if st.session_state.eh_admin and filtro_usuario == "Todos os Produtores" else "Sensor"
             
             eixo_x = "Hora" if "Data" not in df_filtrado.columns else "Data"
             fig = px.line(df_filtrado.tail(10), x=eixo_x, y="Umidade", color=cor_grafico, markers=True, height=220)
             fig.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
-                font_color="#8b949e", margin=dict(l=10, r=10, t=10, b=10),
-                xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="#21262d")
+                font_color="#94A3B8", margin=dict(l=10, r=10, t=10, b=10),
+                xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="#1E293B")
             )
+            fig.update_traces(line=dict(width=3), marker=dict(size=8))
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
             
         with col_visual_dir:
-            st.markdown("<h3>📍 Localização dos Sensores</h3>", unsafe_allow_html=True)
+            st.markdown("<h3>📍 Mapa de Sensores GPS</h3>", unsafe_allow_html=True)
             st.map(df_filtrado, height=220)
             
         # IA Agrônomo - Diagnóstico Fixo
@@ -268,20 +289,20 @@ with abas[0]:
         perfil_usuario = dados_usuario.get("perfil", "Pequeno Produtor") if dados_usuario else "Pequeno Produtor"
 
         if "Entusiasta" in perfil_usuario or "Testes" in perfil_usuario:
-            st.markdown("<h3 style='color:#2ea043;'>⚙️ MODO DE TESTES INTERATIVO</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='color:#00E676;'>⚙️ SIMULADOR DE PERFIS DA IA</h3>", unsafe_allow_html=True)
             perfil_simulado = st.selectbox(
-                "Escolha qual perfil você quer simular para testar a IA:",
+                "Escolha o perfil alvo para simulação:",
                 ["Pequeno Produtor", "Médio Produtor", "Grande Produtor", "Agrônomo / Consultor", "Acadêmico"]
             )
             perfil_alvo_ia = perfil_simulado
         else:
             perfil_alvo_ia = perfil_usuario
 
-        if st.button("🤖 GERAR DIAGNÓSTICO IA DA LAVOURA"):
+        if st.button("✨ GERAR DIAGNÓSTICO IA AGRONÔMICO"):
             if not GOOGLE_API_KEY:
-                st.error("Erro: A chave 'GOOGLE_API_KEY' não foi configurada nos Secrets do Streamlit.")
+                st.error("Chave API Key ausente.")
             else:
-                with st.spinner("Analisando solo..."):
+                with st.spinner("Nossa IA está lendo o solo..."):
                     prompt = f"""
                     Você é um agrônomo sênior especialista em IA e inteligência de dados de solo.
                     Analise os seguintes dados recentes de solo coletados: {df_filtrado.tail(3).to_string()}
@@ -298,72 +319,63 @@ with abas[0]:
                     st.session_state.diagnostico_ia = chamar_gemini_vias_puras(prompt, GOOGLE_API_KEY)
         
         if st.session_state.diagnostico_ia:
-            st.markdown("<div style='background-color:#161b22; padding:15px; border-radius:10px; border-left:4px solid #2ea043; margin-bottom: 20px;'>", unsafe_allow_html=True)
+            st.markdown(f"<div class='diagnostico-box'>", unsafe_allow_html=True)
             if "Entusiasta" in perfil_usuario or "Testes" in perfil_usuario:
-                st.markdown(f"**💡 Exibindo resposta simulada para: {perfil_alvo_ia}**")
+                st.markdown(f"<span style='color:#00E676; font-size:0.85rem;'><b>Simulação ativa para: {perfil_alvo_ia}</b></span>", unsafe_allow_html=True)
             st.write(st.session_state.diagnostico_ia)
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # 💬 NOVA SEÇÃO: CHAT INTERATIVO COM A IA
+        # 💬 SEÇÃO DO CHAT DE IA INTERATIVO ELEGANTE
         st.markdown("---")
-        st.markdown("<h3>💬 Converse com o Agrônomo de IA</h3>", unsafe_allow_html=True)
-        st.markdown("<p style='font-size:0.85rem; color:#8b949e;'>Tire dúvidas sobre correção de pH, manejo de umidade ou dicas de plantio para os seus talhões.</p>", unsafe_allow_html=True)
+        st.markdown("<h3>💬 Central de Consultas AgroIA</h3>", unsafe_allow_html=True)
         
-        # Mostrar o histórico de mensagens trocadas nesta sessão
+        # Histórico impresso dentro do contêiner premium estilizado
+        st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
         for msg in st.session_state.historico_conversa:
             if msg["role"] == "user":
-                st.markdown(f"<div class='chat-user'><b>Você:</b> {msg['text']}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='chat-user'>👨‍🌾 <b>Você:</b><br>{msg['text']}</div>", unsafe_allow_html=True)
             else:
-                st.markdown(f"<div class='chat-ia'><b>🤖 AgroIA:</b> {msg['text']}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='chat-ia'>🤖 <b>AgroIA Sênior:</b><br>{msg['text']}</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
         
-        # Caixa de entrada para a pergunta do usuário
-        pergunta_usuario = st.chat_input("Digite sua dúvida sobre a lavoura aqui...")
+        pergunta_usuario = st.chat_input("Pergunte algo sobre adubação, pragas ou correção de solo...")
         
         if pergunta_usuario:
-            # Salva a pergunta do usuário no histórico e atualiza a tela
             st.session_state.historico_conversa.append({"role": "user", "text": pergunta_usuario})
             
             if not GOOGLE_API_KEY:
-                st.session_state.historico_conversa.append({"role": "ia", "text": "Erro: Chave API Key ausente."})
+                st.session_state.historico_conversa.append({"role": "ia", "text": "Erro no servidor da IA."})
             else:
-                with st.spinner("Pensando na resposta..."):
-                    # Contextualiza a IA com os dados atuais e o perfil do produtor
+                with st.spinner("Analisando parâmetros..."):
                     prompt_chat = f"""
                     Você é um Assistente Agrônomo Virtual Inteligente criado para o projeto Agrinho. 
                     Seu objetivo é ajudar produtores rurais de forma prática e direta.
-                    
-                    Contexto atual da lavoura deste produtor:
-                    {df_filtrado.tail(3).to_string()}
-                    
-                    Perfil do Produtor: {perfil_alvo_ia}
-                    
-                    Responda à seguinte dúvida de forma clara, prestativa e objetiva:
-                    "{pergunta_usuario}"
+                    Contexto recente da lavoura: {df_filtrado.tail(3).to_string()}
+                    Perfil: {perfil_alvo_ia}
+                    Responda: "{pergunta_usuario}"
                     """
                     resposta_ia = chamar_gemini_vias_puras(prompt_chat, GOOGLE_API_KEY)
-                    # Salva a resposta da IA no histórico
                     st.session_state.historico_conversa.append({"role": "ia", "text": resposta_ia})
             st.rerun()
-
     else:
         st.info("Nenhum dado cadastrado para exibição.")
 
 # --- COMPORTAMENTO DO PRODUTOR / ACADÊMICO / TESTE ---
 if not st.session_state.eh_admin:
     with abas[1]:
-        st.markdown("<h2>📝 Nova Coleta de Solo</h2>", unsafe_allow_html=True)
+        st.markdown("<h2>📝 Registrar Nova Coleta</h2>", unsafe_allow_html=True)
         with st.form("form_mobile_clean", clear_on_submit=True):
-            f_sensor = st.selectbox("Qual o Talhão / Área?", ["Talhão Norte", "Talhão Sul", "Setor Leste", "Estufa 01", "Estufa 02"])
+            f_sensor = st.selectbox("Selecione o Talhão / Área:", ["Talhão Norte", "Talhão Sul", "Setor Leste", "Estufa 01", "Estufa 02"])
             f_ph = st.number_input("Nível de pH medido (0.0 a 14.0)", min_value=0.0, max_value=14.0, value=6.5, step=0.1, format="%.1f")
             f_umidade = st.number_input("Porcentagem de Umidade (%)", min_value=0, max_value=100, value=50, step=1)
             
-            st.markdown("<p style='color:#8b949e; margin-bottom:0;'>📍 Localização GPS</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color:#94A3B8; margin-top:10px; margin-bottom:5px; font-weight:600;'>📍 Coordenadas Geográficas GPS</p>", unsafe_allow_html=True)
             c1, c2 = st.columns(2)
-            f_lat = c1.number_input("Lat", value=-23.5874, format="%.4f")
-            f_lon = c2.number_input("Lon", value=-46.6576, format="%.4f")
+            f_lat = c1.number_input("Latitude", value=-23.5874, format="%.4f")
+            f_lon = c2.number_input("Longitude", value=-46.6576, format="%.4f")
             
-            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-            enviado = st.form_submit_button("🚀 ENVIAR LEITURA AGORA")
+            st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+            enviado = st.form_submit_button("🚀 SALVAR E TRANSMITIR LEITURA")
             
             if enviado:
                 agora = pd.Timestamp.now()
@@ -375,16 +387,16 @@ if not st.session_state.eh_admin:
                     "Hora": agora.strftime("%H:%M:%S")
                 }
                 historico_coll.insert_one(nova_leitura)
-                st.success("Dados enviados com sucesso! Confira na aba de registros.")
+                st.success("Transmissão concluída com sucesso!")
 
     with abas[2]:
-        st.markdown("<h2>📋 Seus Dados Enviados</h2>", unsafe_allow_html=True)
+        st.markdown("<h2>📋 Relatório de Registros Enviados</h2>", unsafe_allow_html=True)
         if not df_filtrado.empty:
             df_tab = df_filtrado.copy().drop(columns=['_id', 'usuario'], errors='ignore')
             colunas_certas = [c for c in ["Data", "Hora", "Sensor", "pH", "Umidade", "latitude", "longitude"] if c in df_tab.columns]
             st.dataframe(df_tab[colunas_certas], use_container_width=True, hide_index=True)
         else: 
-            st.warning("Sem dados cadastrados.")
+            st.warning("Sem registros na sua conta.")
 
 # --- COMPORTAMENTO DO ADMIN ---
 else:
@@ -400,60 +412,60 @@ else:
                 column_config={"_id": None, "latitude": None, "longitude": None}
             )
             
-            if st.button("💾 GRAVAR ALTERAÇÕES"):
+            if st.button("💾 GRAVAR ALTERAÇÕES NO HISTÓRICO"):
                 for index, row in dados_editados.iterrows():
                     historico_coll.update_one(
                         {"_id": ObjectId(row['_id'])},
                         {"$set": {"Sensor": row['Sensor'], "pH": float(row['pH']), "Umidade": int(row['Umidade'])}}
                     )
-                st.success("Banco Atualizado com Sucesso!")
+                st.success("Banco de dados atualizado!")
                 st.rerun()
                 
             st.markdown("---")
-            st.markdown("<h3>🗑️ Apagar Registro de Medição</h3>", unsafe_allow_html=True)
+            st.markdown("<h3>🗑️ Remover Registro</h3>", unsafe_allow_html=True)
             
             opcoes_delecao = []
             for i, row in df_filtrado.iterrows():
                 dt_str = row.get('Data', 'Sem Data')
                 opcoes_delecao.append(f"[{i}] {dt_str} {row['Hora']} | {row['usuario']} -> {row['Sensor']}")
                 
-            escolha_registro = st.selectbox("Selecione qual medição excluir:", opcoes_delecao)
+            escolha_registro = st.selectbox("Selecione o item para exclusão:", opcoes_delecao)
             
-            if st.button("🗑️ REMOVER MEDIÇÃO PERMANENTEMENTE"):
+            if st.button("🗑️ EXPULSAR MEDIÇÃO DO BANCO"):
                 idx_original = int(escolha_registro.split(']')[0].replace('[', ''))
                 id_para_deletar = df_filtrado.iloc[idx_original]['_id']
                 historico_coll.delete_one({"_id": ObjectId(id_para_deletar)})
-                st.success("Registro de medição removido!")
+                st.success("Medição apagada!")
                 st.rerun()
 
     with abas[2]:
-        st.markdown("<h2>👥 Controle de Contas Cadastradas</h2>", unsafe_allow_html=True)
+        st.markdown("<h2>👥 Administração de Usuários</h2>", unsafe_allow_html=True)
         todas_contas = list(usuarios_coll.find({}))
         df_contas = pd.DataFrame(todas_contas)
         
         if not df_contas.empty:
             df_contas_exibicao = df_contas.copy().drop(columns=['_id', 'senha'], errors='ignore')
-            st.markdown("### Lista de Usuários Ativos")
+            st.markdown("### Contas Ativas")
             st.dataframe(df_contas_exibicao, use_container_width=True, hide_index=True)
             
             st.markdown("---")
-            st.markdown("<h3>🚨 Excluir Conta do Sistema</h3>", unsafe_allow_html=True)
+            st.markdown("<h3>🚨 Excluir Conta do Ecossistema</h3>", unsafe_allow_html=True)
             
             lista_usuarios = [row['usuario'] for _, row in df_contas.iterrows() if row['usuario'] != st.session_state.usuario_logado]
             
             if lista_usuarios:
-                conta_para_deletar = st.selectbox("Selecione o usuário para deletar do sistema:", lista_usuarios)
-                confirmar_exclusao = st.checkbox(f"Eu tenho certeza que quero apagar a conta de '{conta_para_deletar}' e todos os dados vinculados.")
+                conta_para_deletar = st.selectbox("Selecione o perfil para banir:", lista_usuarios)
+                confirmar_exclusao = st.checkbox(f"Estou ciente de que isso apagará a conta {conta_para_deletar} e todas as suas leituras.")
                 
-                if st.button("❌ APAGAR CONTA DEFINITIVAMENTE"):
+                if st.button("❌ EXCLUIR CADASTRO EM DEFINITIVO"):
                     if confirmar_exclusao:
                         historico_coll.delete_many({"usuario": conta_para_deletar})
                         usuarios_coll.delete_one({"usuario": conta_para_deletar})
-                        st.success(f"A conta de '{conta_para_deletar}' e seu histórico foram removidos do servidor.")
+                        st.success(f"O usuário {conta_para_deletar} foi removido do sistema.")
                         st.rerun()
                     else:
-                        st.warning("Marque a caixa de confirmação acima antes de clicar no botão.")
+                        st.warning("Confirme marcando a caixa de seleção.")
             else:
-                st.info("Não há outras contas cadastradas para exclusão.")
+                st.info("Nenhuma outra conta disponível para exclusão.")
         else:
-            st.info("Nenhuma conta registrada no banco.")
+            st.info("Nenhum usuário localizado.")
