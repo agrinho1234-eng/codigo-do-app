@@ -21,7 +21,7 @@ db = client["AgroData"]
 usuarios_coll = db["usuarios"]
 historico_coll = db["historico_sensores"]
 
-# --- CONFIGURAÇÃO DA IA RESTRUTURADA ---
+# --- CONFIGURAÇÃO DA IA ATUALIZADA ---
 try:
     if "GOOGLE_API_KEY" in st.secrets:
         GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
@@ -34,19 +34,6 @@ except:
 
 if GOOGLE_API_KEY:
     genai.configure(api_key=GOOGLE_API_KEY)
-
-def buscar_modelo():
-    # Tenta usar a chamada simplificada padrão da API moderna
-    try:
-        return genai.GenerativeModel('gemini-1.5-flash')
-    except:
-        try:
-            # Fallback para o modelo legado caso a biblioteca esteja desatualizada no servidor
-            return genai.GenerativeModel('gemini-pro')
-        except:
-            return None
-
-model = buscar_modelo()
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="AgroTech Mobile", layout="wide", page_icon="🚜", initial_sidebar_state="collapsed")
@@ -255,8 +242,6 @@ with abas[0]:
         if st.button("🤖 GERAR DIAGNÓSTICO IA DA LAVOURA"):
             if not GOOGLE_API_KEY:
                 st.error("Erro: A chave 'GOOGLE_API_KEY' não foi configurada nos Secrets do Streamlit.")
-            elif model is None:
-                st.error("Erro técnico: O Google mudou a rota desse modelo. Verifique os logs.")
             else:
                 with st.spinner("Analisando solo..."):
                     try:
@@ -273,10 +258,19 @@ with abas[0]:
                         - Se for Agrônomo / Consultor: Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
                         - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia estritamente científica.
                         """
-                        resposta = model.generate_content(prompt)
+                        
+                        # CHAMADA DE COMPATIBILIDADE UNIVERSAL (Resolve o erro 404 de v1beta)
+                        ai_model = genai.GenerativeModel(model_name='gemini-1.5-flash')
+                        resposta = ai_model.generate_content(prompt)
                         st.session_state.diagnostico_ia = resposta.text
-                    except Exception as e: 
-                        st.session_state.diagnostico_ia = f"Erro ao gerar conteúdo. Detalhes técnicos: {str(e)}"
+                    except Exception as e:
+                        try:
+                            # SEGUNDA TENTATIVA CASO O SERVIDOR SÓ TENHA MODELOS ANTIGOS
+                            ai_model = genai.GenerativeModel(model_name='gemini-pro')
+                            resposta = ai_model.generate_content(prompt)
+                            st.session_state.diagnostico_ia = resposta.text
+                        except Exception as e_interno:
+                            st.session_state.diagnostico_ia = f"Erro na requisição. Detalhes técnicos: {str(e_interno)}"
         
         if st.session_state.diagnostico_ia:
             st.markdown("<div style='background-color:#161b22; padding:15px; border-radius:10px; border-left:4px solid #2ea043;'>", unsafe_allow_html=True)
