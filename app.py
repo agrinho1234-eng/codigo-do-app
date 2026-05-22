@@ -7,8 +7,6 @@ from pymongo import MongoClient
 import urllib.parse
 from bson.objectid import ObjectId
 
-st.write(f"Tamanho da chave: {len(GOOGLE_API_KEY)} | Começa com AIza: {GOOGLE_API_KEY.startswith('AIza')}")
-
 # --- CONFIGURAÇÃO DO MONGODB ---
 usuario = "agrinho1234_db_user"
 senha_pura = "Agrinho@2000"
@@ -34,6 +32,9 @@ try:
         GOOGLE_API_KEY = ""
 except:
     GOOGLE_API_KEY = ""
+
+# COLOQUE A LINHA DE TESTE EXATAMENTE AQUI:
+st.write(f"Tamanho da chave: {len(GOOGLE_API_KEY)} | Começa com AIza: {GOOGLE_API_KEY.startswith('AIza')}")
 
 # --- FUNÇÃO DE REQUISIÇÃO DIRETA ATUALIZADA (SISTEMA DE CONTINGÊNCIA REGIONAL) ---
 def chamar_gemini_vias_puras(prompt_texto, api_key):
