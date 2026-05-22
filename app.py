@@ -33,10 +33,10 @@ try:
 except:
     GOOGLE_API_KEY = ""
 
-# --- FUNÇÃO DE REQUISIÇÃO DIRETA COM MODELO UNIVERSAL ---
+# --- FUNÇÃO DE REQUISIÇÃO DIRETA COM MOTOR ATUALIZADO ---
 def chamar_gemini_vias_puras(prompt_texto, api_key):
-    # Mudança para o modelo estável universal que não sofre bloqueio regional de v1/v1beta
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+    # Usando a ID estável de produção 'gemini-1.5-flash-latest' que aponta para a versão correta da API pública
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
     
     headers = {'Content-Type': 'application/json'}
     payload = {
@@ -54,8 +54,8 @@ def chamar_gemini_vias_puras(prompt_texto, api_key):
             dados = resposta.json()
             return dados['candidates'][0]['content']['parts'][0]['text']
         else:
-            # Plano alternativo se a conta exigir o sufixo numérico do modelo estático
-            url_alt = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key={api_key}"
+            # Plano B: Tenta o modelo mais recente da linha Flash se o aliasing do anterior falhar
+            url_alt = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
             resposta_alt = requests.post(url_alt, headers=headers, json=payload, timeout=15)
             
             if resposta_alt.status_code == 200:
@@ -290,7 +290,7 @@ with abas[0]:
                     - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia estritamente científica.
                     """
                     
-                    # Chamada com o modelo Gemini Pro universal
+                    # Chamada com o aliasing de produção estável atualizado
                     st.session_state.diagnostico_ia = chamar_gemini_vias_puras(prompt, GOOGLE_API_KEY)
         
         if st.session_state.diagnostico_ia:
