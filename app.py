@@ -29,14 +29,19 @@ try:
     elif st.config.get_option("secrets.GOOGLE_API_KEY"):
         GOOGLE_API_KEY = st.config.get_option("secrets.GOOGLE_API_KEY")
     else:
-        GOOGLE_API_KEY = "AIzaSyDBItQq-Qu6atbjZL7Od1Buz6Fonmy_v6s"
+        GOOGLE_API_KEY = ""
 except:
-    GOOGLE_API_KEY = "AIzaSyDBItQq-Qu6atbjZL7Od1Buz6Fonmy_v6s"
+    GOOGLE_API_KEY = ""
 
-# --- FUNÇÃO DE REQUISIÇÃO DIRETA AO GEMINI (SEM DEPENDER DE BIBLIOTECA) ---
+# --- FUNÇÃO DE REQUISIÇÃO MULTI-MODELO (ANTI-404) ---
 def chamar_gemini_via_http(prompt_texto, api_key):
-    # Força a rota da API estável v1, evitando o erro 404 da v1beta antiga do servidor
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+    # Lista de modelos e versões para testar em ordem de prioridade
+    rotas_para_testar = [
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+        "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent",
+        "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent"
+    ]
+    
     headers = {'Content-Type': 'application/json'}
     payload = {
         "contents": [
@@ -46,15 +51,22 @@ def chamar_gemini_via_http(prompt_texto, api_key):
         ]
     }
     
-    resposta = requests.post(url, headers=headers, json=payload)
-    if resposta.status_code == 200:
-        dados_resposta = resposta.json()
+    ultimo_erro = ""
+    
+    # Loop que testa as rotas até uma funcionar
+    for url_base in rotas_para_testar:
+        url_completa = f"{url_base}?key={api_key}"
         try:
-            return dados_resposta['candidates'][0]['content']['parts'][0]['text']
-        except:
-            return "Erro ao processar a resposta da IA."
-    else:
-        return f"Erro na API da Google: Status {resposta.status_code} - {resposta.text}"
+            resposta = requests.post(url_completa, headers=headers, json=payload, timeout=10)
+            if resposta.status_code == 200:
+                dados_resposta = resposta.json()
+                return dados_resposta['candidates'][0]['content']['parts'][0]['text']
+            else:
+                ultimo_erro = f"Rota [{url_base.split('/')[-2]}/{url_base.split('/')[-1].split(':')[0]}]: Status {resposta.status_code}"
+        except Exception as e:
+            ultimo_erro = f"Erro de conexão: {str(e)}"
+            
+    return f"Nenhum modelo respondeu. Última tentativa: {ultimo_erro}. Verifique se a chave gerada no AI Studio está ativa."
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="AgroTech Mobile", layout="wide", page_icon="🚜", initial_sidebar_state="collapsed")
@@ -279,7 +291,7 @@ with abas[0]:
                     - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia estritamente científica.
                     """
                     
-                    # Chamada direta via HTTP Bypass (Garante o funcionamento sem erros 404 de biblioteca)
+                    # Chamada com o roteador de contingência
                     st.session_state.diagnostico_ia = chamar_gemini_via_http(prompt, GOOGLE_API_KEY)
         
         if st.session_state.diagnostico_ia:
