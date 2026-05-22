@@ -124,7 +124,7 @@ if not st.session_state.autenticado:
             novo_user = st.text_input("Escolha o Usuário")
             nova_senha = st.text_input("Crie uma Senha", type="password")
             
-            # --- VARIETAL PERFIL ESTRATÉGICO ---
+            # --- SELEÇÃO DE PERFIL COM CORREÇÕES SOLICITADAS ---
             perfil_personalizado = st.selectbox(
                 "Qual é o seu perfil na lavoura?", 
                 [
@@ -234,38 +234,37 @@ with abas[0]:
         if st.button("🤖 GERAR DIAGNÓSTICO IA DA LAVOURA"):
             with st.spinner("Analisando solo..."):
                 try:
-                    # Busca o perfil personalizado que o usuário escolheu no cadastro
                     dados_usuario = usuarios_coll.find_one({"usuario": st.session_state.usuario_logado})
                     perfil_usuario = dados_usuario.get("perfil", "Pequeno Produtor (Agricultura Familiar e Orgânicos)") if dados_usuario else "Pequeno Produtor"
 
-                    # Se for o usuário de testes/entusiasta, ativa a resposta mestre explicativa
+                    # SISTEMA INTERATIVO PARA CONTA DE TESTES
                     if "Entusiasta" in perfil_usuario or "Testes" in perfil_usuario:
                         prompt = f"""
-                        Você é um agrônomo sênior especialista em IA. O usuário atual está no "Modo de Demonstração/Teste" do app para conhecer as funções.
-                        Analise estes dados de solo enviados: {df_filtrado.tail(3).to_string()}
+                        Você é um agrônomo sênior especialista em inteligência de dados. O usuário logado está usando a conta "Entusiasta / Usuário de Testes" para avaliar a capacidade do software.
+                        Analise estes dados reais do solo: {df_filtrado.tail(3).to_string()}
                         
-                        Crie um super painel comparativo mostrando como a nossa IA aborda esses mesmos dados de forma diferente para cada tipo de cliente. Organize exatamente assim, usando tópicos claros e diretos:
+                        Monte um guia comparativo claro, didático e estruturado exatamente como no exemplo abaixo, explicando as diferenças práticas de opções para cada porte e tipo de lavoura baseado nesses dados coletados:
                         
-                        🤖 **MODO DE DEMONSTRAÇÃO INTERATIVO**
-                        Aqui está como a nossa inteligência responde de forma estratégica para cada perfil do campo:
+                        ⚙️ **SIMULADOR DE PERSPECTIVAS DA IA**
+                        Descubra como o app transforma estes mesmos dados de solo em soluções sob medida para cada tipo de perfil do campo:
                         
-                        🌱 **Se você entrar como Pequeno Produtor:**
-                        (Dê 1 conselho curto, de baixo custo e adubação manual/orgânica para o pH/umidade atuais)
+                        🌱 **Se você fosse um Pequeno Produtor:**
+                        Explique qual seria a linha de ação prática, focando em manejo manual, controle de umidade local e adubação orgânica/baixo custo para este pH/Umidade atuais.
                         
-                        🚜 **Se você entrar como Médio Produtor:**
-                        (Dê 1 conselho rápido focado em custo-benefício de insumos e rendimento por hectare)
+                        🚜 **Se você fosse um Médio Produtor:**
+                        Mostre quais seriam as opções focando no balanço de custo-benefício de fertilizantes e controle por hectare visando produtividade de mercado.
                         
-                        🚀 **Se você entrar como Grande Produtor:**
-                        (Dê 1 recomendação de alta tecnologia, maquinário ou agricultura de precisão para esses dados)
+                        🚀 **Se você fosse um Grande Produtor:**
+                        Aponte as opções tecnológicas exclusivas que abririam aqui: calagem automatizada por taxa variável, telemetria de maquinário pesado e agricultura de precisão em larga escala.
                         
-                        🔬 **Se você entrar como Estudante/Pesquisador:**
-                        (Explique resumidamente o conceito biológico/científico por trás desse nível atual de pH e umidade)
+                        🔬 **Se você fosse um Estudante / Pesquisador Acadêmico:**
+                        Mostre que a IA traria uma análise científica dos dados, explicando a correlação da umidade com a CTC do solo ou a disponibilidade de macro/micronutrientes por conta deste pH atual.
                         
-                        💼 **Se você entrar como Agrônomo/Consultor:**
-                        (Simule um pequeno trecho de laudo ou parecer técnico formal sobre o estado atual do talhão)
+                        💼 **Se você fosse um Agrônomo / Consultor Técnico:**
+                        Mostre que o foco seria a emissão de um parecer técnico formal simplificado para tomadas de decisão rápidas junto ao produtor.
                         """
                     else:
-                        # Prompt padrão individual para os outros perfis
+                        # PROMPTS INDIVIDUAIS DOS OUTROS PERFIS
                         prompt = f"""
                         Você é um agrônomo sênior especialista em IA e inteligência de dados de solo.
                         Analise os seguintes dados recentes de solo: {df_filtrado.tail(3).to_string()}
@@ -277,7 +276,7 @@ with abas[0]:
                         - Se for Médio Produtor: Foque em eficiência, custo-benefício de fertilizantes e táticas para aumentar a produtividade por hectare.
                         - Se for Grande Produtor: Foque em alta tecnologia, correção de solo para maquinário pesado, agricultura de precisão e metas de larga escala.
                         - Se for Agrônomo / Consultor: Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
-                        - Se for Estudante / Pesquisador Acadêmico: Foque na explicação teórica e científica por trás dos dados (ex: dinâmica da água no solo, disponibilidade de nutrientes conforme o pH). Use termos acadêmicos e científicos.
+                        - Se for Estudante / Pesquisador Acadêmico: Forneça uma análise focada em conceitos teóricos e científicos profundos (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia acadêmica.
                         """
                     
                     st.session_state.diagnostico_ia = model.generate_content(prompt).text
@@ -291,7 +290,7 @@ with abas[0]:
     else:
         st.info("Nenhum dado cadastrado para exibição.")
 
-# --- COMPORTAMENTO DO PRODUTOR ---
+# --- COMPORTAMENTO DO PRODUTOR / ESTUDANTE / TESTE ---
 if not st.session_state.eh_admin:
     with abas[1]:
         st.markdown("<h2>📝 Nova Coleta de Solo</h2>", unsafe_allow_html=True)
