@@ -278,13 +278,19 @@ with abas[0]:
             cor_grafico = "usuario" if st.session_state.eh_admin and filtro_usuario == "Todos os Produtores" else "Sensor"
             
             eixo_x = "Hora" if "Data" not in df_filtrado.columns else "Data"
-            fig = px.line(df_filtrado.tail(10), x=eixo_x, y="Umidade", color=cor_grafico, markers=True, height=220)
+            
+            # Ajustado para usar uma paleta elegante nativa compatível com multicor e evitar o crash
+            fig = px.line(
+                df_filtrado.tail(10), x=eixo_x, y="Umidade", color=cor_grafico, 
+                markers=True, height=220, color_discrete_sequence=px.colors.qualitative.Neon
+            )
             fig.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
                 font_color="#94A3B8", margin=dict(l=10, r=10, t=10, b=10),
                 xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor="#1E293B")
             )
-            fig.update_traces(line=dict(width=4, color="#00E676"), marker=dict(size=10, borderwidth=2))
+            # Customização segura sem sobrescrever a cor fixa gerada pelo agrupamento
+            fig.update_traces(line=dict(width=3), marker=dict(size=8))
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
             
         with col_visual_dir:
@@ -334,7 +340,7 @@ with abas[0]:
             st.write(st.session_state.diagnostico_ia)
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # 💬 SEÇÃO DO CHAT CHAT LADO A LADO ESTILO APP PREMIUM
+        # --- SEÇÃO DO CHAT CHAT LADO A LADO ESTILO APP PREMIUM ---
         st.markdown("---")
         st.markdown("<h3>💬 Consultoria Direta via AgroIA</h3>", unsafe_allow_html=True)
         
@@ -371,7 +377,7 @@ with abas[0]:
 # --- COMPORTAMENTO DO PRODUTOR / ACADÊMICO / TESTE ---
 if not st.session_state.eh_admin:
     with abas[1]:
-        st.markdown("<h2>📝 Nova Amostragem Técnica</h2>", unsafe_allow_html=True)
+        st.markdown("<h2>📝 Nova Amostragem Técnico</h2>", unsafe_allow_html=True)
         with st.form("form_mobile_clean", clear_on_submit=True):
             f_sensor = st.selectbox("Identificação do Talhão/Estufa:", ["Talhão Norte", "Talhão Sul", "Setor Leste", "Estufa 01", "Estufa 02"])
             f_ph = st.number_input("Medição de pH de Solo (0.0 a 14.0)", min_value=0.0, max_value=14.0, value=6.5, step=0.1, format="%.1f")
