@@ -33,14 +33,16 @@ try:
 except:
     GOOGLE_API_KEY = ""
 
-# --- FUNÇÃO DE REQUISIÇÃO DIRETA VIA HTTP (SEM USAR NADA DA BIBLIOTECA GOOGLE) ---
+# --- FUNÇÃO DE REQUISIÇÃO DIRETA ATUALIZADA (SISTEMA DE CONTINGÊNCIA REGIONAL) ---
 def chamar_gemini_vias_puras(prompt_texto, api_key):
-    # Rota oficial utilizada diretamente pelo Google AI Studio para o Gemini 1.5 Flash
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    # Lista de endpoints oficiais atualizados da Google (testa v1 e v1beta com variações de ID do Flash)
+    endpoints = [
+        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}",
+        f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}",
+        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+    ]
     
     headers = {'Content-Type': 'application/json'}
-    
-    # Estrutura de dados exata exigida pela API REST do Gemini
     payload = {
         "contents": [{
             "parts": [{
@@ -49,24 +51,24 @@ def chamar_gemini_vias_puras(prompt_texto, api_key):
         }]
     }
     
-    try:
-        resposta = requests.post(url, headers=headers, json=payload, timeout=15)
-        
-        if resposta.status_code == 200:
-            dados = resposta.json()
-            # Tratamento seguro para extrair o texto de resposta da IA
-            return dados['candidates'][0]['content']['parts'][0]['text']
-        elif resposta.status_code == 400:
-            return "Erro 400: Sintaxe da requisição inválida. Verifique os dados do solo enviados."
-        elif resposta.status_code == 403:
-            return "Erro 403: Chave API inválida ou sem permissão. Verifique os Secrets do Streamlit."
-        elif resposta.status_code == 404:
-            return "Erro 404: O modelo não foi encontrado nesta região ou a URL foi alterada pela Google."
-        else:
-            return f"Erro inesperado na API (Status {resposta.status_code}): {resposta.text}"
+    erros_acumulados = []
+    
+    # Varre os endpoints disponíveis até encontrar o ativo para a sua região
+    for url in endpoints:
+        try:
+            resposta = requests.post(url, headers=headers, json=payload, timeout=15)
+            if resposta.status_code == 200:
+                dados = resposta.json()
+                return dados['candidates'][0]['content']['parts'][0]['text']
+            else:
+                # Extrai o nome do modelo testado para exibir no log de erro se falhar completamente
+                modelo_testado = url.split("/models/")[1].split(":")[0]
+                erros_acumulados.append(f"{modelo_testado} (Status {resposta.status_code})")
+        except Exception as e:
+            erros_acumulados.append(f"Erro de conexão: {str(e)}")
             
-    except Exception as e:
-        return f"Falha de conexão com os servidores da Google: {str(e)}"
+    # Se todas as rotas falharem, exibe o diagnóstico detalhado das tentativas
+    return f"Erro de mapeamento regional na Google. Tentativas falhas: {', '.join(erros_acumulados)}. Certifique-se de que a API Key foi gerada na opção 'New Project' do Google AI Studio."
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="AgroTech Mobile", layout="wide", page_icon="🚜", initial_sidebar_state="collapsed")
@@ -291,7 +293,7 @@ with abas[0]:
                     - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia estritamente científica.
                     """
                     
-                    # Chamada HTTP bypass pura, sem bibliotecas do google terceiras interferindo
+                    # Chamada com o mecanismo de varredura inteligente
                     st.session_state.diagnostico_ia = chamar_gemini_vias_puras(prompt, GOOGLE_API_KEY)
         
         if st.session_state.diagnostico_ia:
