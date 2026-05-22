@@ -33,40 +33,40 @@ try:
 except:
     GOOGLE_API_KEY = ""
 
-# --- FUNÇÃO DE REQUISIÇÃO MULTI-MODELO (ANTI-404) ---
-def chamar_gemini_via_http(prompt_texto, api_key):
-    # Lista de modelos e versões para testar em ordem de prioridade
-    rotas_para_testar = [
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
-        "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent",
-        "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent"
-    ]
+# --- FUNÇÃO DE REQUISIÇÃO DIRETA VIA HTTP (SEM USAR NADA DA BIBLIOTECA GOOGLE) ---
+def chamar_gemini_vias_puras(prompt_texto, api_key):
+    # Rota oficial utilizada diretamente pelo Google AI Studio para o Gemini 1.5 Flash
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     
     headers = {'Content-Type': 'application/json'}
+    
+    # Estrutura de dados exata exigida pela API REST do Gemini
     payload = {
-        "contents": [
-            {
-                "parts": [{"text": prompt_texto}]
-            }
-        ]
+        "contents": [{
+            "parts": [{
+                "text": prompt_texto
+            }]
+        }]
     }
     
-    ultimo_erro = ""
-    
-    # Loop que testa as rotas até uma funcionar
-    for url_base in rotas_para_testar:
-        url_completa = f"{url_base}?key={api_key}"
-        try:
-            resposta = requests.post(url_completa, headers=headers, json=payload, timeout=10)
-            if resposta.status_code == 200:
-                dados_resposta = resposta.json()
-                return dados_resposta['candidates'][0]['content']['parts'][0]['text']
-            else:
-                ultimo_erro = f"Rota [{url_base.split('/')[-2]}/{url_base.split('/')[-1].split(':')[0]}]: Status {resposta.status_code}"
-        except Exception as e:
-            ultimo_erro = f"Erro de conexão: {str(e)}"
+    try:
+        resposta = requests.post(url, headers=headers, json=payload, timeout=15)
+        
+        if resposta.status_code == 200:
+            dados = resposta.json()
+            # Tratamento seguro para extrair o texto de resposta da IA
+            return dados['candidates'][0]['content']['parts'][0]['text']
+        elif resposta.status_code == 400:
+            return "Erro 400: Sintaxe da requisição inválida. Verifique os dados do solo enviados."
+        elif resposta.status_code == 403:
+            return "Erro 403: Chave API inválida ou sem permissão. Verifique os Secrets do Streamlit."
+        elif resposta.status_code == 404:
+            return "Erro 404: O modelo não foi encontrado nesta região ou a URL foi alterada pela Google."
+        else:
+            return f"Erro inesperado na API (Status {resposta.status_code}): {resposta.text}"
             
-    return f"Nenhum modelo respondeu. Última tentativa: {ultimo_erro}. Verifique se a chave gerada no AI Studio está ativa."
+    except Exception as e:
+        return f"Falha de conexão com os servidores da Google: {str(e)}"
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="AgroTech Mobile", layout="wide", page_icon="🚜", initial_sidebar_state="collapsed")
@@ -291,8 +291,8 @@ with abas[0]:
                     - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia estritamente científica.
                     """
                     
-                    # Chamada com o roteador de contingência
-                    st.session_state.diagnostico_ia = chamar_gemini_via_http(prompt, GOOGLE_API_KEY)
+                    # Chamada HTTP bypass pura, sem bibliotecas do google terceiras interferindo
+                    st.session_state.diagnostico_ia = chamar_gemini_vias_puras(prompt, GOOGLE_API_KEY)
         
         if st.session_state.diagnostico_ia:
             st.markdown("<div style='background-color:#161b22; padding:15px; border-radius:10px; border-left:4px solid #2ea043;'>", unsafe_allow_html=True)
