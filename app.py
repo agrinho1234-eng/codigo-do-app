@@ -28,9 +28,9 @@ try:
     elif st.config.get_option("secrets.GOOGLE_API_KEY"):
         GOOGLE_API_KEY = st.config.get_option("secrets.GOOGLE_API_KEY")
     else:
-        GOOGLE_API_KEY = ""
+        GOOGLE_API_KEY = "AIzaSyDBItQq-Qu6atbjZL7Od1Buz6Fonmy_v6s"
 except:
-    GOOGLE_API_KEY = ""
+    GOOGLE_API_KEY = "AIzaSyDBItQq-Qu6atbjZL7Od1Buz6Fonmy_v6s"
 
 if GOOGLE_API_KEY:
     genai.configure(api_key=GOOGLE_API_KEY)
