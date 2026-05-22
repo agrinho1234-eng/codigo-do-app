@@ -124,7 +124,7 @@ if not st.session_state.autenticado:
             novo_user = st.text_input("Escolha o Usuário")
             nova_senha = st.text_input("Crie uma Senha", type="password")
             
-            # --- SELEÇÃO DE PERFIL COM CORREÇÕES SOLICITADAS ---
+            # --- SELEÇÃO DE PERFIL AJUSTADA (APENAS ACADÊMICO) ---
             perfil_personalizado = st.selectbox(
                 "Qual é o seu perfil na lavoura?", 
                 [
@@ -132,7 +132,7 @@ if not st.session_state.autenticado:
                     "Médio Produtor (Cultivos Comerciais e Grãos)", 
                     "Grande Produtor (Alta Tecnologia e Larga Escala)", 
                     "Agrônomo / Consultor (Foco em Relatórios Técnicos)",
-                    "Estudante / Pesquisador Acadêmico (Análise Científica)",
+                    "Acadêmico",
                     "Entusiasta / Usuário de Testes (Apenas conhecendo o app)"
                 ]
             )
@@ -231,66 +231,53 @@ with abas[0]:
             
         # IA Agrônomo com persistência no session_state
         st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+        
+        # Recupera o perfil real do banco de dados
+        dados_usuario = usuarios_coll.find_one({"usuario": st.session_state.usuario_logado})
+        perfil_usuario = dados_usuario.get("perfil", "Pequeno Produtor") if dados_usuario else "Pequeno Produtor"
+
+        # RECURSO VISUAL PARA O USUÁRIO DE TESTE PODER VER TODAS AS OPÇÕES DE PERFIS NA TELA:
+        if "Entusiasta" in perfil_usuario or "Testes" in perfil_usuario:
+            st.markdown("<h3 style='color:#2ea043;'>⚙️ MODO DE TESTES INTERATIVO</h3>", unsafe_allow_html=True)
+            perfil_simulado = st.selectbox(
+                "Escolha qual perfil você quer simular para testar a IA:",
+                ["Pequeno Produtor", "Médio Produtor", "Grande Produtor", "Agrônomo / Consultor", "Acadêmico"]
+            )
+            perfil_alvo_ia = perfil_simulado
+        else:
+            perfil_alvo_ia = perfil_usuario
+
         if st.button("🤖 GERAR DIAGNÓSTICO IA DA LAVOURA"):
             with st.spinner("Analisando solo..."):
                 try:
-                    dados_usuario = usuarios_coll.find_one({"usuario": st.session_state.usuario_logado})
-                    perfil_usuario = dados_usuario.get("perfil", "Pequeno Produtor (Agricultura Familiar e Orgânicos)") if dados_usuario else "Pequeno Produtor"
-
-                    # SISTEMA INTERATIVO PARA CONTA DE TESTES
-                    if "Entusiasta" in perfil_usuario or "Testes" in perfil_usuario:
-                        prompt = f"""
-                        Você é um agrônomo sênior especialista em inteligência de dados. O usuário logado está usando a conta "Entusiasta / Usuário de Testes" para avaliar a capacidade do software.
-                        Analise estes dados reais do solo: {df_filtrado.tail(3).to_string()}
-                        
-                        Monte um guia comparativo claro, didático e estruturado exatamente como no exemplo abaixo, explicando as diferenças práticas de opções para cada porte e tipo de lavoura baseado nesses dados coletados:
-                        
-                        ⚙️ **SIMULADOR DE PERSPECTIVAS DA IA**
-                        Descubra como o app transforma estes mesmos dados de solo em soluções sob medida para cada tipo de perfil do campo:
-                        
-                        🌱 **Se você fosse um Pequeno Produtor:**
-                        Explique qual seria a linha de ação prática, focando em manejo manual, controle de umidade local e adubação orgânica/baixo custo para este pH/Umidade atuais.
-                        
-                        🚜 **Se você fosse um Médio Produtor:**
-                        Mostre quais seriam as opções focando no balanço de custo-benefício de fertilizantes e controle por hectare visando produtividade de mercado.
-                        
-                        🚀 **Se você fosse um Grande Produtor:**
-                        Aponte as opções tecnológicas exclusivas que abririam aqui: calagem automatizada por taxa variável, telemetria de maquinário pesado e agricultura de precisão em larga escala.
-                        
-                        🔬 **Se você fosse um Estudante / Pesquisador Acadêmico:**
-                        Mostre que a IA traria uma análise científica dos dados, explicando a correlação da umidade com a CTC do solo ou a disponibilidade de macro/micronutrientes por conta deste pH atual.
-                        
-                        💼 **Se você fosse um Agrônomo / Consultor Técnico:**
-                        Mostre que o foco seria a emissão de um parecer técnico formal simplificado para tomadas de decisão rápidas junto ao produtor.
-                        """
-                    else:
-                        # PROMPTS INDIVIDUAIS DOS OUTROS PERFIS
-                        prompt = f"""
-                        Você é um agrônomo sênior especialista em IA e inteligência de dados de solo.
-                        Analise os seguintes dados recentes de solo: {df_filtrado.tail(3).to_string()}
-                        
-                        Gere um diagnóstico personalizado de no máximo 3 tópicos curtos para o perfil: "{perfil_usuario}".
-                        
-                        Siga estritamente esta estratégia de resposta para o perfil selecionado:
-                        - Se for Pequeno Produtor: Foque em soluções práticas, manejos manuais ou orgânicos e adubos de baixo custo. Use linguagem simples.
-                        - Se for Médio Produtor: Foque em eficiência, custo-benefício de fertilizantes e táticas para aumentar a produtividade por hectare.
-                        - Se for Grande Produtor: Foque em alta tecnologia, correção de solo para maquinário pesado, agricultura de precisão e metas de larga escala.
-                        - Se for Agrônomo / Consultor: Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
-                        - Se for Estudante / Pesquisador Acadêmico: Forneça uma análise focada em conceitos teóricos e científicos profundos (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia acadêmica.
-                        """
+                    # Prompt mestre dinâmico baseado na sua escolha de simulação ou perfil real
+                    prompt = f"""
+                    Você é um agrônomo sênior especialista em IA e inteligência de dados de solo.
+                    Analise os seguintes dados recentes de solo coletados: {df_filtrado.tail(3).to_string()}
                     
+                    Gere um diagnóstico personalizado de no máximo 3 tópicos curtos adaptado para o perfil: "{perfil_alvo_ia}".
+                    
+                    Siga estritamente esta estratégia de resposta para o perfil selecionado:
+                    - Se for Pequeno Produtor: Foque em soluções práticas, manejos manuais ou orgânicos e adubos de baixo custo. Use linguagem simples.
+                    - Se for Médio Produtor: Foque em eficiência, custo-benefício de fertilizantes e táticas para aumentar a produtividade por hectare.
+                    - Se for Grande Produtor: Foque em alta tecnologia, correção de solo para maquinário pesado, agricultura de precisão e metas de larga escala.
+                    - Se for Agrônomo / Consultor: Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
+                    - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia estritamente científica.
+                    """
                     st.session_state.diagnostico_ia = model.generate_content(prompt).text
                 except: 
                     st.session_state.diagnostico_ia = "Erro ao conectar com a IA do Google. Verifique sua chave de API."
         
         if st.session_state.diagnostico_ia:
             st.markdown("<div style='background-color:#161b22; padding:15px; border-radius:10px; border-left:4px solid #2ea043;'>", unsafe_allow_html=True)
+            if "Entusiasta" in perfil_usuario or "Testes" in perfil_usuario:
+                st.markdown(f"**💡 Exibindo resposta simulada para: {perfil_alvo_ia}**")
             st.write(st.session_state.diagnostico_ia)
             st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.info("Nenhum dado cadastrado para exibição.")
 
-# --- COMPORTAMENTO DO PRODUTOR / ESTUDANTE / TESTE ---
+# --- COMPORTAMENTO DO PRODUTOR / ACADÊMICO / TESTE ---
 if not st.session_state.eh_admin:
     with abas[1]:
         st.markdown("<h2>📝 Nova Coleta de Solo</h2>", unsafe_allow_html=True)
