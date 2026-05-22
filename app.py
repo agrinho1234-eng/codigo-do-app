@@ -35,7 +35,6 @@ except:
 
 # --- FUNÇÃO DE REQUISIÇÃO DIRETA COM MOTOR ATUALIZADO ---
 def chamar_gemini_vias_puras(prompt_texto, api_key):
-    # Usando a ID estável de produção 'gemini-1.5-flash-latest' que aponta para a versão correta da API pública
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
     
     headers = {'Content-Type': 'application/json'}
@@ -54,7 +53,6 @@ def chamar_gemini_vias_puras(prompt_texto, api_key):
             dados = resposta.json()
             return dados['candidates'][0]['content']['parts'][0]['text']
         else:
-            # Plano B: Tenta o modelo mais recente da linha Flash se o aliasing do anterior falhar
             url_alt = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
             resposta_alt = requests.post(url_alt, headers=headers, json=payload, timeout=15)
             
@@ -207,7 +205,7 @@ st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
 
 # --- ABAS DE NAVEGAÇÃO APP ---
 if st.session_state.eh_admin:
-    abas_sistema = ["📊 DASHBOARD GERAL", "🛠️ MODERAR DADOS"]
+    abas_sistema = ["📊 DASHBOARD GERAL", "🛠️ MODERAR DADOS", "👥 GERENCIAR CONTAS"]
 else:
     abas_sistema = ["📊 MEU PAINEL", "📝 ENVIAR DADOS", "📋 REGISTROS"]
 
@@ -243,7 +241,10 @@ with abas[0]:
         with col_visual_esq:
             st.markdown("<h3>📈 Histórico Recente de Umidade</h3>", unsafe_allow_html=True)
             cor_grafico = "usuario" if st.session_state.eh_admin and filtro_usuario == "Todos os Produtores" else "Sensor"
-            fig = px.line(df_filtrado.tail(10), x="Hora", y="Umidade", color=cor_grafico, markers=True, height=220)
+            
+            # Gráfico agora pode usar Hora ou Data se houver múltiplas medições
+            eixo_x = "Hora" if "Data" not in df_filtrado.columns else "Data"
+            fig = px.line(df_filtrado.tail(10), x=eixo_x, y="Umidade", color=cor_grafico, markers=True, height=220)
             fig.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
                 font_color="#8b949e", margin=dict(l=10, r=10, t=10, b=10),
@@ -289,8 +290,6 @@ with abas[0]:
                     - Se for Agrônomo / Consultor: Forneça uma análise técnica detalhada dos parâmetros de pH e umidade, simulando um parecer técnico ou laudo profissional.
                     - Se for Acadêmico: Forneça uma análise totalmente focada em conceitos teóricos, científicos e de pesquisa (ex: lixiviação de nutrientes, capacidade de campo, atividade microbiana conforme o pH). Use terminologia estritamente científica.
                     """
-                    
-                    # Chamada com o aliasing de produção estável atualizado
                     st.session_state.diagnostico_ia = chamar_gemini_vias_puras(prompt, GOOGLE_API_KEY)
         
         if st.session_state.diagnostico_ia:
@@ -320,11 +319,13 @@ if not st.session_state.eh_admin:
             enviado = st.form_submit_button("🚀 ENVIAR LEITURA AGORA")
             
             if enviado:
+                agora = pd.Timestamp.now()
                 nova_leitura = {
                     "usuario": st.session_state.usuario_logado,
                     "Sensor": f_sensor, "pH": float(f_ph), "Umidade": int(f_umidade),
                     "latitude": float(f_lat), "longitude": float(f_lon),
-                    "Hora": pd.Timestamp.now().strftime("%H:%M:%S")
+                    "Data": agora.strftime("%d/%m/%Y"),
+                    "Hora": agora.strftime("%H:%M:%S")
                 }
                 historico_coll.insert_one(nova_leitura)
                 st.success("Dados enviados com sucesso! Confira na aba de registros.")
@@ -333,12 +334,16 @@ if not st.session_state.eh_admin:
         st.markdown("<h2>📋 Seus Dados Enviados</h2>", unsafe_allow_html=True)
         if not df_filtrado.empty:
             df_tab = df_filtrado.copy().drop(columns=['_id', 'usuario'], errors='ignore')
-            st.dataframe(df_tab, use_container_width=True, hide_index=True)
+            
+            # Reordenar colunas de forma amigável se a Data existir
+            colunas_certas = [c for c in ["Data", "Hora", "Sensor", "pH", "Umidade", "latitude", "longitude"] if c in df_tab.columns]
+            st.dataframe(df_tab[colunas_certas], use_container_width=True, hide_index=True)
         else: 
             st.warning("Sem dados cadastrados.")
 
 # --- COMPORTAMENTO DO ADMIN ---
 else:
+    # ABA 2 ADMIN: MODERAR DADOS DO HISTÓRICO
     with abas[1]:
         st.markdown("<h2>🛠️ Painel Host de Moderação</h2>", unsafe_allow_html=True)
         if not df_filtrado.empty:
@@ -347,7 +352,7 @@ else:
             
             dados_editados = st.data_editor(
                 df_editor, use_container_width=True, hide_index=True,
-                disabled=["usuario", "Hora", "_id"],
+                disabled=["usuario", "Hora", "Data", "_id"],
                 column_config={"_id": None, "latitude": None, "longitude": None}
             )
             
@@ -361,13 +366,60 @@ else:
                 st.rerun()
                 
             st.markdown("---")
-            st.markdown("<h3>🗑️ Apagar Registro</h3>", unsafe_allow_html=True)
-            opcoes_delecao = [f"[{i}] {row['usuario']} | {row['Sensor']}" for i, row in df_filtrado.iterrows()]
-            escolha_registro = st.selectbox("Selecione a linha:", opcoes_delecao)
+            st.markdown("<h3>🗑️ Apagar Registro de Medição</h3>", unsafe_allow_html=True)
             
-            if st.button("🗑️ REMOVER PERMANENTEMENTE"):
+            # Exibe a data na seleção caso ela exista
+            opcoes_delecao = []
+            for i, row in df_filtrado.iterrows():
+                dt_str = row.get('Data', 'Sem Data')
+                opcoes_delecao.append(f"[{i}] {dt_str} {row['Hora']} | {row['usuario']} -> {row['Sensor']}")
+                
+            escolha_registro = st.selectbox("Selecione qual medição excluir:", opcoes_delecao)
+            
+            if st.button("🗑️ REMOVER MEDIÇÃO PERMANENTEMENTE"):
                 idx_original = int(escolha_registro.split(']')[0].replace('[', ''))
                 id_para_deletar = df_filtrado.iloc[idx_original]['_id']
                 historico_coll.delete_one({"_id": ObjectId(id_para_deletar)})
-                st.success("Registro removido!")
+                st.success("Registro de medição removido!")
                 st.rerun()
+
+    # ABA 3 ADMIN: GERENCIAR E EXCLUIR CONTAS DE USUÁRIOS
+    with abas[2]:
+        st.markdown("<h2>👥 Controle de Contas Cadastradas</h2>", unsafe_allow_html=True)
+        
+        # Carregar todas as contas do banco
+        todas_contas = list(usuarios_coll.find({}))
+        df_contas = pd.DataFrame(todas_contas)
+        
+        if not df_contas.empty:
+            df_contas_exibicao = df_contas.copy().drop(columns=['_id', 'senha'], errors='ignore')
+            st.markdown("### Lista de Usuários Ativos")
+            st.dataframe(df_contas_exibicao, use_container_width=True, hide_index=True)
+            
+            st.markdown("---")
+            st.markdown("<h3>🚨 Excluir Conta do Sistema</h3>", unsafe_allow_html=True)
+            
+            # Impedir o admin de deletar o próprio login administrador que ele está usando
+            lista_usuarios = [row['usuario'] for _, row in df_contas.iterrows() if row['usuario'] != st.session_state.usuario_logado]
+            
+            if lista_usuarios:
+                conta_para_deletar = st.selectbox("Selecione o usuário para deletar do sistema:", lista_usuarios)
+                
+                # Alerta e verificação extra de segurança para exclusão
+                confirmar_exclusao = st.checkbox(f"Eu tenho certeza que quero apagar a conta de '{conta_para_deletar}' e todos os dados vinculados.")
+                
+                if st.button("❌ APAGAR CONTA DEFINITIVAMENTE"):
+                    if confirmar_exclusao:
+                        # 1. Apaga os dados de medição que o usuário enviou
+                        historico_coll.delete_many({"usuario": conta_para_deletar})
+                        # 2. Apaga a conta do banco de dados
+                        usuarios_coll.delete_one({"usuario": conta_para_deletar})
+                        
+                        st.success(f"A conta de '{conta_para_deletar}' e seu histórico foram removidos do servidor.")
+                        st.rerun()
+                    else:
+                        st.warning("Marque a caixa de confirmação acima antes de clicar no botão.")
+            else:
+                st.info("Não há outras contas cadastradas para exclusão.")
+        else:
+            st.info("Nenhuma conta registrada no banco.")
