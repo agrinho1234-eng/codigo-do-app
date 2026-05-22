@@ -132,7 +132,7 @@ if not st.session_state.autenticado:
                     "Médio Produtor (Cultivos Comerciais e Grãos)", 
                     "Grande Produtor (Alta Tecnologia e Larga Escala)", 
                     "Agrônomo / Consultor (Foco em Relatórios Técnicos)",
-                    "Estudante / Pesquisador Acadêmico (Análise Científica)",
+                    "Acadêmico (Análise Científica)",
                     "Entusiasta / Usuário de Testes (Apenas conhecendo o app)"
                 ]
             )
