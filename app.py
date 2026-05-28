@@ -35,7 +35,8 @@ except:
 
 # --- FUNÇÃO DE REQUISIÇÃO DIRETA ---
 def chamar_gemini_vias_puras(prompt_texto, api_key):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
+    # Atualizado para o modelo oficial e ativo gemini-2.5-flash
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     
     headers = {'Content-Type': 'application/json'}
     payload = {
@@ -53,13 +54,6 @@ def chamar_gemini_vias_puras(prompt_texto, api_key):
             dados = resposta.json()
             return dados['candidates'][0]['content']['parts'][0]['text']
         else:
-            url_alt = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-            resposta_alt = requests.post(url_alt, headers=headers, json=payload, timeout=15)
-            
-            if resposta_alt.status_code == 200:
-                dados_alt = resposta_alt.json()
-                return dados_alt['candidates'][0]['content']['parts'][0]['text']
-                
             return f"Erro na IA (Status {resposta.status_code}). Detalhes: {resposta.text}"
             
     except Exception as e:
